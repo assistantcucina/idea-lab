@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Persona Drafts</title>
+<style>
+  :root {
+    --bg: #ecdfc4;
+    --panel: #f8f0dc;
+    --ink: #3a2b1a;
+    --muted: #7a6a52;
+    --border: #c9b78f;
+    --accent: #8a3324;
+    --accent-2: #4a5a3a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    background-image: radial-gradient(circle at 20% 10%, rgba(255,255,255,0.25), transparent 40%);
+    color: var(--ink);
+    font-family: Georgia, "Palatino Linotype", "Iowan Old Style", serif;
+    padding: 22px 14px calc(64px + env(safe-area-inset-bottom));
+  }
+  .wrap { max-width: 460px; margin: 0 auto; }
+
+  .title { font-size: 28px; text-align: center; letter-spacing: 1px; margin: 4px 0 2px; }
+  .subtitle { text-align: center; color: var(--muted); font-size: 13px; margin: 0 0 18px; font-style: italic; }
+
+  .controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .genre-btn {
+    flex: 1;
+    min-width: 100px;
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 6px;
+    font-family: inherit;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .genre-btn.active { border-color: var(--accent); color: var(--accent); font-weight: bold; }
+
+  .generate-btn {
+    display: block;
+    width: 100%;
+    background: var(--accent);
+    color: #f8f0dc;
+    border: none;
+    border-radius: 6px;
+    padding: 13px;
+    font-family: inherit;
+    font-size: 15px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    margin-bottom: 18px;
+  }
+  .generate-btn:active { transform: translateY(1px); }
+
+  .card {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 18px;
+    margin-bottom: 14px;
+    box-shadow: 0 2px 0 var(--border);
+  }
+  .card-top { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+  .portrait {
+    width: 56px; height: 56px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    border: 2px solid var(--border);
+  }
+  .p-name { font-size: 19px; margin: 0; }
+  .p-class { font-size: 12px; color: var(--accent-2); font-weight: bold; letter-spacing: 0.5px; }
+
+  .trait-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .trait {
+    font-size: 11px;
+    background: rgba(138,51,36,0.08);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 3px 9px;
+    color: var(--accent-2);
+  }
+  .backstory { font-size: 13px; line-height: 1.6; font-style: italic; color: var(--ink); margin: 0 0 14px; }
+
+  .card-actions { display: flex; gap: 8px; }
+  .card-actions button {
+    flex: 1;
+    border: 2px solid var(--border);
+    background: var(--bg);
+    border-radius: 6px;
+    padding: 9px 0;
+    font-family: inherit;
+    font-size: 12px;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .card-actions .keep { border-color: var(--accent-2); color: var(--accent-2); font-weight: bold; }
+
+  .party-title { font-size: 14px; margin: 20px 0 8px; color: var(--muted); letter-spacing: 0.5px; }
+  .party-list { display: flex; flex-direction: column; gap: 6px; }
+  .party-item {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .party-item .p-class-tag { color: var(--accent-2); }
+  .empty { color: var(--muted); font-size: 12px; text-align: center; padding: 10px 0; }
+
+  .site-footer {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 10;
+    padding: 10px 20px calc(10px + env(safe-area-inset-bottom));
+    background: var(--panel);
+    border-top: 2px solid var(--border);
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .site-footer a { color: var(--muted); text-decoration: underline; }
+  .site-footer a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="title">Persona Drafts</div>
+  <p class="subtitle">a new character, one tap away</p>
+
+  <div class="controls" id="genres"></div>
+  <button class="generate-btn" id="genBtn">✒ Generate Character</button>
+
+  <div id="cardArea"></div>
+
+  <div class="party-title">Your Party</div>
+  <div class="party-list" id="party"><div class="empty">Keep a character to add them here.</div></div>
+</div>
+
+<footer class="site-footer">built by <a href="https://adrianbudny.com" target="_blank" rel="noreferrer">ab</a></footer>
+
+<script>
+(function () {
+  const genres = [
+    { id: "fantasy", label: "Fantasy TTRPG" },
+    { id: "scifi", label: "Sci-Fi" },
+    { id: "noir", label: "Modern Noir" },
+  ];
+  const pools = {
+    fantasy: {
+      names: ["Thessaly Ashwind", "Bram Oakenshade", "Nyra Duskbloom", "Corwin Ferrowgate", "Isolde Varrow"],
+      classes: ["Half-Elf Ranger", "Dwarven Cleric", "Tiefling Rogue", "Human Battle-Mage", "Gnome Artificer"],
+      traits: [["haunted by a debt", "trusts too easily", "collects broken blades"], ["speaks to crows", "owes a favor to a dragon", "afraid of open water"], ["once a noble", "can't lie without stuttering", "loyal past reason"]],
+      backstory: [
+        "Cast out of their home for a crime they didn't commit, {name} now travels searching for the one witness who could clear their name.",
+        "{name} was raised by the temple after being found alone in the ruins of a burned village — the fire, they suspect, was no accident.",
+        "A gambling debt to the wrong noble house sent {name} fleeing into a life on the road, one step ahead of the collectors.",
+      ],
+      color: "#8a3324",
+    },
+    scifi: {
+      names: ["Vex Kaelin", "Orin-9", "Marisol Chen", "Dray Ashcroft", "Tamsin Vole"],
+      classes: ["Salvage Pilot", "Rogue AI Construct", "Corp Defector Medic", "Void-Runner Mercenary", "Signal Hacker"],
+      traits: [["never removes their helmet", "hoards pre-collapse tech", "bad luck with airlocks"], ["debugging their own memory", "smuggled a black-market reactor", "distrusts synths, secretly is one"], ["ex-corp, still has the badge", "talks to the ship", "counting down to something"]],
+      backstory: [
+        "{name} jumped ship from a mega-corp research vessel with a drive core that shouldn't exist — and a crew of one behind them, still tracking.",
+        "After the Kessler Line went dark, {name} has been running salvage on the wreckage, looking for one signal that never should have stopped.",
+        "{name}'s memory has three years missing. The ship's logs say they were never gone. Someone is lying.",
+      ],
+      color: "#2b5a6b",
+    },
+    noir: {
+      names: ["Lenny Cross", "Delia Vance", "Marcus Solano", "Ruth Halloway", "Eddie Fontaine"],
+      classes: ["Ex-Cop P.I.", "Nightclub Fixer", "Disbarred Lawyer", "Getaway Driver", "Insurance Investigator"],
+      traits: [["owes the wrong bookie", "one good eye, one glass", "quotes cases no one asks about"], ["knows everyone's secret but their own", "carries two phones", "never orders the same drink twice"], ["burned a badge for the truth once", "still not sure it was worth it", "keeps a file on their old partner"]],
+      backstory: [
+        "{name} took the case nobody wanted — a missing person who, it turns out, wanted to stay missing, from someone worse than the cops.",
+        "Six years off the force and {name} still can't walk past a crime scene without reading it. This one's reading back.",
+        "The client paid in cash and a story that didn't add up. {name} took the job anyway. The rent doesn't care about your instincts.",
+      ],
+      color: "#3a3a42",
+    },
+  };
+
+  let genre = "fantasy";
+  let party = [];
+
+  function render() {
+    const g = document.getElementById("genres");
+    g.innerHTML = "";
+    genres.forEach((x) => {
+      const b = document.createElement("button");
+      b.className = "genre-btn" + (x.id === genre ? " active" : "");
+      b.textContent = x.label;
+      b.addEventListener("click", () => { genre = x.id; render(); });
+      g.appendChild(b);
+    });
+    renderParty();
+  }
+
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  function generate() {
+    const pool = pools[genre];
+    const name = pick(pool.names);
+    const cls = pick(pool.classes);
+    const traits = pick(pool.traits);
+    const story = pick(pool.backstory).replace("{name}", name);
+    const hue = pool.color;
+
+    document.getElementById("cardArea").innerHTML =
+      '<div class="card">' +
+      '<div class="card-top"><div class="portrait" style="background:' + hue + '"></div>' +
+      '<div><p class="p-name">' + name + '</p><div class="p-class">' + cls + "</div></div></div>" +
+      '<div class="trait-row">' + traits.map((t) => '<span class="trait">' + t + "</span>").join("") + "</div>" +
+      '<p class="backstory">' + story + "</p>" +
+      '<div class="card-actions"><button class="keep" id="keepBtn">Keep</button><button id="rerollBtn">Reroll</button></div>' +
+      "</div>";
+
+    document.getElementById("keepBtn").addEventListener("click", () => {
+      party.push({ name, cls });
+      renderParty();
+    });
+    document.getElementById("rerollBtn").addEventListener("click", generate);
+  }
+
+  function renderParty() {
+    const el = document.getElementById("party");
+    if (!party.length) {
+      el.innerHTML = '<div class="empty">Keep a character to add them here.</div>';
+      return;
+    }
+    el.innerHTML = party
+      .map((p) => '<div class="party-item"><span>' + p.name + '</span><span class="p-class-tag">' + p.cls + "</span></div>")
+      .join("");
+  }
+
+  document.getElementById("genBtn").addEventListener("click", generate);
+  render();
+  generate();
+})();
+</script>
+</body>
+</html>

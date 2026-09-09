@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Doppelgänger</title>
+<style>
+  :root {
+    --bg: #f0f2f5;
+    --panel: #ffffff;
+    --border: #e1e4ea;
+    --text: #16181d;
+    --muted: #6b7280;
+    --accent: #635bff;
+    --accent-soft: #eeecff;
+    --sent: #e7f7ee;
+    --sent-text: #1a7a44;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14151a;
+      --panel: #1c1e26;
+      --border: #2b2e38;
+      --text: #f0f1f5;
+      --muted: #9298a8;
+      --accent: #8b85ff;
+      --accent-soft: #262450;
+      --sent: #163326;
+      --sent-text: #6fe3a0;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 20px 14px calc(60px + env(safe-area-inset-bottom));
+  }
+  .wrap { max-width: 460px; margin: 0 auto; }
+
+  .title { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; margin: 4px 0 2px; }
+  .subtitle { color: var(--muted); font-size: 13px; margin: 0 0 16px; }
+
+  .stats {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .stat {
+    flex: 1;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+  }
+  .stat .num { font-size: 20px; font-weight: 700; color: var(--accent); }
+  .stat .label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .thread {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  .thread-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--accent-soft); color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; flex-shrink: 0;
+  }
+  .contact-name { font-size: 14px; font-weight: 600; }
+
+  .bubble {
+    padding: 9px 12px;
+    border-radius: 14px;
+    font-size: 13px;
+    line-height: 1.4;
+    margin-bottom: 8px;
+    max-width: 88%;
+  }
+  .bubble.incoming { background: var(--bg); border: 1px solid var(--border); }
+  .bubble.draft {
+    background: var(--accent-soft);
+    border: 1px dashed var(--accent);
+    margin-left: auto;
+    position: relative;
+  }
+  .bubble.sent {
+    background: var(--sent);
+    color: var(--sent-text);
+    margin-left: auto;
+  }
+  .draft-tag {
+    display: inline-block;
+    font-size: 9px;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--panel);
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    padding: 1px 6px;
+    margin-bottom: 6px;
+  }
+  .sent-tag { font-size: 10px; opacity: 0.75; display: block; margin-top: 3px; }
+
+  .actions { display: flex; gap: 8px; margin-top: 4px; }
+  .actions button {
+    flex: 1;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 0;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-approve { background: var(--accent); color: #fff; }
+  .btn-edit { background: var(--bg); color: var(--text); border: 1px solid var(--border) !important; }
+  .btn-decline { background: var(--bg); color: var(--muted); border: 1px solid var(--border) !important; }
+
+  .edit-box textarea {
+    width: 100%;
+    min-height: 60px;
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--panel);
+    resize: vertical;
+    margin-bottom: 8px;
+  }
+
+  .empty-thread { text-align: center; color: var(--muted); font-size: 12px; padding: 14px 0; }
+
+  .guardrail {
+    text-align: center;
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+
+  .site-footer {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 10;
+    padding: 10px 20px calc(10px + env(safe-area-inset-bottom));
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .site-footer a { color: var(--muted); text-decoration: underline; }
+  .site-footer a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="title">Doppelgänger</div>
+  <p class="subtitle">it drafts replies in your voice. you always approve first.</p>
+
+  <div class="stats">
+    <div class="stat"><div class="num" id="statSent">0</div><div class="label">sent today</div></div>
+    <div class="stat"><div class="num" id="statHours">0.0</div><div class="label">hrs saved</div></div>
+    <div class="stat"><div class="num" id="statPending">3</div><div class="label">awaiting you</div></div>
+  </div>
+
+  <div id="threads"></div>
+
+  <p class="guardrail">Nothing sends without your tap. Revoke access to any contact anytime.</p>
+</div>
+
+<footer class="site-footer">built by <a href="https://adrianbudny.com" target="_blank" rel="noreferrer">ab</a></footer>
+
+<script>
+(function () {
+  const threads = [
+    { id: "jake", name: "Jake M.", incoming: "hey you free this weekend? want to grab dinner sat", draft: "yesss let's do sat! 7ish work for you?" },
+    { id: "mom", name: "Mom", incoming: "did you get my package? tracking says delivered", draft: "yep got it today, thank you!! 💙" },
+    { id: "sam", name: "Sam (work)", incoming: "can you review the deck before tomorrow's call?", draft: "on it, will send comments tonight" },
+  ];
+  const state = {}; // id -> "pending" | "editing" | "sent" | "declined"
+  let sentCount = 0;
+
+  function initials(name) {
+    return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+  }
+
+  function updateStats() {
+    document.getElementById("statSent").textContent = sentCount;
+    document.getElementById("statHours").textContent = (sentCount * 0.4).toFixed(1);
+    const pending = threads.filter((t) => (state[t.id] || "pending") === "pending" || state[t.id] === "editing").length;
+    document.getElementById("statPending").textContent = pending;
+  }
+
+  function render() {
+    const el = document.getElementById("threads");
+    el.innerHTML = "";
+    let anyLeft = false;
+    threads.forEach((t) => {
+      const s = state[t.id] || "pending";
+      if (s === "declined") return;
+      anyLeft = true;
+      const card = document.createElement("div");
+      card.className = "thread";
+
+      let bottom = "";
+      if (s === "pending") {
+        bottom =
+          '<div class="bubble draft"><span class="draft-tag">AI DRAFT</span><br>' + t.draft + "</div>" +
+          '<div class="actions">' +
+          '<button class="btn-approve" data-act="approve" data-id="' + t.id + '">Approve</button>' +
+          '<button class="btn-edit" data-act="edit" data-id="' + t.id + '">Edit</button>' +
+          '<button class="btn-decline" data-act="decline" data-id="' + t.id + '">Decline</button>' +
+          "</div>";
+      } else if (s === "editing") {
+        bottom =
+          '<div class="edit-box"><textarea id="edit-' + t.id + '">' + t.draft + "</textarea>" +
+          '<div class="actions">' +
+          '<button class="btn-approve" data-act="send-edit" data-id="' + t.id + '">Send</button>' +
+          '<button class="btn-decline" data-act="cancel-edit" data-id="' + t.id + '">Cancel</button>' +
+          "</div></div>";
+      } else if (s === "sent") {
+        bottom = '<div class="bubble sent">' + (t.editedText || t.draft) + '<span class="sent-tag">sent via Doppelgänger</span></div>';
+      }
+
+      card.innerHTML =
+        '<div class="thread-head"><div class="avatar">' + initials(t.name) + '</div><div class="contact-name">' + t.name + "</div></div>" +
+        '<div class="bubble incoming">' + t.incoming + "</div>" +
+        bottom;
+      el.appendChild(card);
+    });
+    if (!anyLeft) {
+      el.innerHTML = '<div class="empty-thread">Inbox clear — nothing waiting on you.</div>';
+    }
+    el.querySelectorAll("button").forEach((btn) => {
+      btn.addEventListener("click", () => handle(btn.getAttribute("data-act"), btn.getAttribute("data-id")));
+    });
+    updateStats();
+  }
+
+  function handle(act, id) {
+    if (act === "approve") {
+      state[id] = "sent";
+      sentCount++;
+    } else if (act === "edit") {
+      state[id] = "editing";
+    } else if (act === "decline") {
+      state[id] = "declined";
+    } else if (act === "send-edit") {
+      const t = threads.find((x) => x.id === id);
+      t.editedText = document.getElementById("edit-" + id).value;
+      state[id] = "sent";
+      sentCount++;
+    } else if (act === "cancel-edit") {
+      state[id] = "pending";
+    }
+    render();
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>

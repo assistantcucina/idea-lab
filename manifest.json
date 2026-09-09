@@ -4,5 +4,17 @@
     "title": "Habit Arcade",
     "description": "Gamify tiny daily habits — log one, watch XP and streaks climb, unlock a retro reflex mini-game when you clear all three for the day.",
     "date": "2026-09-09"
+  },
+  {
+    "slug": "doppelganger",
+    "title": "Doppelgänger",
+    "description": "An AI that drafts texts in your voice while you're busy — you approve every reply before it sends, nothing goes out on its own.",
+    "date": "2026-09-09"
+  },
+  {
+    "slug": "persona-drafts",
+    "title": "Persona Drafts",
+    "description": "One tap makes a full TTRPG or story character — name, class, quirks, and a backstory — pick a genre and keep the ones you like.",
+    "date": "2026-09-09"
   }
 ]
