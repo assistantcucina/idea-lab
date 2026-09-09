@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Habit Arcade</title>
+<style>
+  :root {
+    --bg: #0d0e1a;
+    --panel: #16182c;
+    --line: #2c2f52;
+    --text: #eef0ff;
+    --muted: #8a8fc0;
+    --neon: #5cf0c0;
+    --neon-2: #ff5ea8;
+    --gold: #ffcf4d;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    background-image:
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 3px);
+    color: var(--text);
+    font-family: "Courier New", ui-monospace, monospace;
+    padding: 24px 16px calc(64px + env(safe-area-inset-bottom));
+    min-height: 100vh;
+  }
+  .wrap { max-width: 480px; margin: 0 auto; }
+
+  .title {
+    text-align: center;
+    font-size: 26px;
+    letter-spacing: 3px;
+    margin: 0 0 4px;
+    color: var(--neon);
+    text-shadow: 0 0 8px rgba(92,240,192,0.5), 0 0 24px rgba(92,240,192,0.25);
+  }
+  .subtitle {
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 1px;
+    margin: 0 0 20px;
+  }
+
+  .stat-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--panel);
+    border: 2px solid var(--line);
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin-bottom: 18px;
+    font-size: 12px;
+  }
+  .stat-bar .lvl { color: var(--gold); font-weight: bold; letter-spacing: 1px; }
+  .xp-track { flex: 1; height: 8px; background: #05060c; border: 1px solid var(--line); border-radius: 4px; margin: 0 12px; overflow: hidden; }
+  .xp-fill { height: 100%; background: linear-gradient(90deg, var(--neon), var(--neon-2)); width: 0%; transition: width 0.4s ease; }
+  .coins { color: var(--muted); white-space: nowrap; }
+
+  .habit {
+    background: var(--panel);
+    border: 2px solid var(--line);
+    border-radius: 4px;
+    padding: 14px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .habit.done { border-color: var(--neon); box-shadow: 0 0 12px rgba(92,240,192,0.25) inset; }
+  .habit-info { flex: 1; min-width: 0; }
+  .habit-name { font-size: 14px; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .habit-streak { font-size: 11px; color: var(--muted); }
+  .habit-streak b { color: var(--gold); }
+  .log-btn {
+    background: #05060c;
+    color: var(--neon);
+    border: 2px solid var(--neon);
+    border-radius: 3px;
+    padding: 8px 12px;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .log-btn:active { transform: translateY(1px); }
+  .log-btn:disabled { color: var(--muted); border-color: var(--line); cursor: default; }
+
+  .badges {
+    display: flex;
+    gap: 8px;
+    margin: 18px 0 22px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    flex: 1;
+    min-width: 90px;
+    text-align: center;
+    background: var(--panel);
+    border: 2px solid var(--line);
+    border-radius: 4px;
+    padding: 10px 6px;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+  }
+  .badge .icon { display: block; font-size: 18px; margin-bottom: 4px; filter: grayscale(1) opacity(0.4); }
+  .badge.unlocked { color: var(--gold); border-color: var(--gold); box-shadow: 0 0 10px rgba(255,207,77,0.25); }
+  .badge.unlocked .icon { filter: none; }
+
+  .arcade {
+    background: var(--panel);
+    border: 2px dashed var(--line);
+    border-radius: 4px;
+    padding: 18px 14px;
+    text-align: center;
+  }
+  .arcade.locked .arcade-title { color: var(--muted); }
+  .arcade-title { font-size: 13px; letter-spacing: 1px; margin-bottom: 10px; }
+  .arcade.unlocked { border-style: solid; border-color: var(--neon-2); box-shadow: 0 0 16px rgba(255,94,168,0.2); }
+
+  .game-track {
+    position: relative;
+    height: 46px;
+    background: #05060c;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .game-zone { position: absolute; top: 0; bottom: 0; left: 40%; width: 20%; background: rgba(92,240,192,0.15); border-left: 1px dashed var(--neon); border-right: 1px dashed var(--neon); }
+  .game-dot { position: absolute; top: 8px; width: 30px; height: 30px; border-radius: 50%; background: var(--neon-2); box-shadow: 0 0 10px var(--neon-2); left: 0%; }
+
+  .smash-btn {
+    background: var(--neon-2);
+    color: #0d0e1a;
+    border: none;
+    border-radius: 4px;
+    padding: 12px 26px;
+    font-family: inherit;
+    font-weight: bold;
+    font-size: 13px;
+    letter-spacing: 1px;
+    cursor: pointer;
+  }
+  .smash-btn:active { transform: translateY(1px); }
+  .score-line { font-size: 11px; color: var(--muted); margin-top: 10px; }
+  .score-line b { color: var(--gold); }
+
+  .site-footer {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 10;
+    padding: 10px 20px calc(10px + env(safe-area-inset-bottom));
+    background: var(--panel);
+    border-top: 1px solid var(--line);
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .site-footer a { color: var(--muted); text-decoration: underline; }
+  .site-footer a:hover { color: var(--neon); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 class="title">HABIT ARCADE</h1>
+  <p class="subtitle">log a habit ▸ earn XP ▸ unlock the arcade</p>
+
+  <div class="stat-bar">
+    <span class="lvl" id="lvl">LV 1</span>
+    <div class="xp-track"><div class="xp-fill" id="xpFill"></div></div>
+    <span class="coins" id="coins">0 pts</span>
+  </div>
+
+  <div id="habits"></div>
+
+  <div class="badges" id="badges"></div>
+
+  <div class="arcade locked" id="arcade">
+    <div class="arcade-title" id="arcadeTitle">🔒 finish today's 3 habits to unlock the arcade</div>
+    <div id="gameArea" hidden>
+      <div class="game-track">
+        <div class="game-zone"></div>
+        <div class="game-dot" id="dot"></div>
+      </div>
+      <button class="smash-btn" id="smashBtn">SMASH</button>
+      <div class="score-line">best: <b id="best">0</b> · last: <b id="last">—</b></div>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">built by <a href="https://adrianbudny.com" target="_blank" rel="noreferrer">ab</a></footer>
+
+<script>
+(function () {
+  const KEY = "habit-arcade-state-v1";
+  const today = new Date().toISOString().slice(0, 10);
+
+  const defaultHabits = [
+    { id: "water", name: "DRINK WATER", streak: 0, lastDone: null },
+    { id: "pushups", name: "5 PUSHUPS", streak: 0, lastDone: null },
+    { id: "read", name: "READ ONE PAGE", streak: 0, lastDone: null },
+  ];
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (!raw) return { habits: defaultHabits, points: 0, best: 0 };
+      const parsed = JSON.parse(raw);
+      return { habits: parsed.habits || defaultHabits, points: parsed.points || 0, best: parsed.best || 0 };
+    } catch (e) {
+      return { habits: defaultHabits, points: 0, best: 0 };
+    }
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  let state = load();
+
+  const BADGES = [
+    { id: "streak3", icon: "▲", label: "3-DAY STREAK", check: (s) => s.habits.some((h) => h.streak >= 3) },
+    { id: "streak7", icon: "★", label: "7-DAY STREAK", check: (s) => s.habits.some((h) => h.streak >= 7) },
+    { id: "allthree", icon: "◆", label: "PERFECT DAY", check: (s) => s.habits.every((h) => h.lastDone === today) },
+    { id: "arcade", icon: "●", label: "ARCADE PLAYED", check: (s) => s.best > 0 },
+  ];
+
+  function xpFor(s) {
+    return s.habits.reduce((sum, h) => sum + h.streak, 0) * 10 + s.points;
+  }
+  function levelFor(xp) {
+    return Math.floor(xp / 50) + 1;
+  }
+
+  function render() {
+    const xp = xpFor(state);
+    const lvl = levelFor(xp);
+    const pct = Math.min(100, xp % 50 * 2);
+    document.getElementById("lvl").textContent = "LV " + lvl;
+    document.getElementById("xpFill").style.width = pct + "%";
+    document.getElementById("coins").textContent = state.points + " pts";
+
+    const habitsEl = document.getElementById("habits");
+    habitsEl.innerHTML = "";
+    state.habits.forEach((h) => {
+      const doneToday = h.lastDone === today;
+      const row = document.createElement("div");
+      row.className = "habit" + (doneToday ? " done" : "");
+      row.innerHTML =
+        '<div class="habit-info">' +
+        '<div class="habit-name">' + h.name + "</div>" +
+        '<div class="habit-streak">streak: <b>' + h.streak + "</b> day" + (h.streak === 1 ? "" : "s") + "</div>" +
+        "</div>" +
+        '<button class="log-btn" data-id="' + h.id + '"' + (doneToday ? " disabled" : "") + ">" +
+        (doneToday ? "LOGGED ✓" : "LOG IT ▸") +
+        "</button>";
+      habitsEl.appendChild(row);
+    });
+    habitsEl.querySelectorAll(".log-btn").forEach((btn) => {
+      btn.addEventListener("click", () => logHabit(btn.getAttribute("data-id")));
+    });
+
+    const badgesEl = document.getElementById("badges");
+    badgesEl.innerHTML = "";
+    BADGES.forEach((b) => {
+      const unlocked = b.check(state);
+      const el = document.createElement("div");
+      el.className = "badge" + (unlocked ? " unlocked" : "");
+      el.innerHTML = '<span class="icon">' + b.icon + "</span>" + b.label;
+      badgesEl.appendChild(el);
+    });
+
+    const allDone = state.habits.every((h) => h.lastDone === today);
+    const arcade = document.getElementById("arcade");
+    const gameArea = document.getElementById("gameArea");
+    const arcadeTitle = document.getElementById("arcadeTitle");
+    if (allDone) {
+      arcade.classList.remove("locked");
+      arcade.classList.add("unlocked");
+      arcadeTitle.textContent = "🎮 ARCADE UNLOCKED — smash the dot in the zone";
+      gameArea.hidden = false;
+    } else {
+      arcade.classList.add("locked");
+      arcade.classList.remove("unlocked");
+      arcadeTitle.textContent = "🔒 finish today's 3 habits to unlock the arcade";
+      gameArea.hidden = true;
+    }
+    document.getElementById("best").textContent = state.best;
+  }
+
+  function logHabit(id) {
+    const h = state.habits.find((x) => x.id === id);
+    if (!h || h.lastDone === today) return;
+    const wasYesterday = h.lastDone === new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    h.streak = wasYesterday ? h.streak + 1 : 1;
+    h.lastDone = today;
+    save();
+    render();
+  }
+
+  // --- mini-game: time a click as a dot crosses a target zone ---
+  let dotAnim = null;
+  function runDot() {
+    const dot = document.getElementById("dot");
+    const start = performance.now();
+    const duration = 1400;
+    cancelAnimationFrame(dotAnim);
+    function step(now) {
+      const t = ((now - start) % duration) / duration;
+      dot.style.left = (t * 92) + "%";
+      dotAnim = requestAnimationFrame(step);
+    }
+    dotAnim = requestAnimationFrame(step);
+  }
+
+  document.getElementById("smashBtn").addEventListener("click", () => {
+    const dot = document.getElementById("dot");
+    const left = parseFloat(dot.style.left || "0");
+    const inZone = left >= 38 && left <= 62;
+    const score = inZone ? 50 : Math.max(0, 20 - Math.round(Math.abs(50 - left) / 2));
+    state.points += score;
+    if (score > state.best) state.best = score;
+    document.getElementById("last").textContent = score;
+    save();
+    render();
+    runDot();
+  });
+
+  render();
+  if (state.habits.every((h) => h.lastDone === today)) runDot();
+})();
+</script>
+</body>
+</html>
