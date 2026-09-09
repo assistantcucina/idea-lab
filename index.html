@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Idea Lab</title>
+<link rel="stylesheet" href="/assets/gallery.css">
+</head>
+<body>
+<header class="site-header">
+  <h1>Idea Lab</h1>
+  <p>A new micro-app idea, dreamed up daily — built into a working prototype the same hour someone says "build it."</p>
+</header>
+<main id="grid" class="grid" aria-live="polite"></main>
+<footer class="site-footer">built automatically, one idea at a time</footer>
+<script>
+  fetch('/manifest.json')
+    .then((r) => r.json())
+    .then((items) => {
+      const grid = document.getElementById('grid');
+      if (!items.length) {
+        grid.innerHTML = '<p class="empty">Nothing here yet — check back soon.</p>';
+        return;
+      }
+      items
+        .slice()
+        .reverse()
+        .forEach((item) => {
+          const a = document.createElement('a');
+          a.className = 'card';
+          a.href = '/p/' + item.slug + '/';
+          a.innerHTML =
+            '<h2>' + item.title + '</h2>' +
+            '<p>' + (item.description || '') + '</p>' +
+            '<span class="date">' + (item.date || '') + '</span>';
+          grid.appendChild(a);
+        });
+    })
+    .catch(() => {
+      document.getElementById('grid').innerHTML = '<p class="empty">Couldn\'t load the gallery — try refreshing.</p>';
+    });
+</script>
+</body>
+</html>
