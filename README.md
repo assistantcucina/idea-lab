@@ -36,7 +36,13 @@ idea-lab/
    fitting the idea), mobile-responsive, at least one actually-working
    interaction, backed by mock/local data (no real backend). No lorem
    ipsum, no unfinished placeholder sections — it should look and feel like
-   a real, finished demo even though the data isn't live.
+   a real, finished demo even though the data isn't live. Every page on
+   this site (gallery included) always shows a `built by ab` footer
+   (hyperlinked to https://adrianbudny.com) fixed to the bottom of the
+   viewport — `position: fixed; bottom: 0` with `env(safe-area-inset-bottom)`
+   padding so it stays visible above Safari's toolbar on iPhone, and give
+   the page enough bottom padding that content never sits behind it. Copy
+   the footer markup/CSS straight from `index.html` / `assets/gallery.css`.
 3. Prepend a new `{slug, title, description, date}` entry to
    `manifest.json` (keep it valid JSON — an array of objects, nothing
    else).
