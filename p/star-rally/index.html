@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Star Rally</title>
+<style>
+  :root {
+    --bg: #fff6e5;
+    --panel: #ffffff;
+    --border: #f0dcae;
+    --text: #1b2a41;
+    --muted: #8a7a5c;
+    --coral: #ff6b6b;
+    --teal: #2ec4b6;
+    --gold: #ffbe0b;
+    --space: #ffe9b8;
+    --space-alt: #ffdf9c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16140f;
+      --panel: #23201a;
+      --border: #3a3527;
+      --text: #f4ecd8;
+      --muted: #a89b7c;
+      --coral: #ff8787;
+      --teal: #4dd8ca;
+      --gold: #ffd35c;
+      --space: #2e2a1f;
+      --space-alt: #363021;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 18px 14px calc(60px + env(safe-area-inset-bottom));
+    min-height: 100vh;
+  }
+  .wrap { max-width: 460px; margin: 0 auto; }
+  button { font-family: inherit; cursor: pointer; }
+  .primary-btn {
+    display: block; width: 100%; background: var(--coral); color: #fff; border: none;
+    border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 700; letter-spacing: 0.3px;
+  }
+  .primary-btn:active { transform: translateY(1px); }
+  .primary-btn:disabled { opacity: 0.5; }
+
+  /* ---- Lobby ---- */
+  .game-title { text-align: center; font-size: 30px; margin: 4px 0 2px; letter-spacing: -0.5px; }
+  .lobby-sub { text-align: center; color: var(--muted); font-size: 13px; margin: 0 0 18px; }
+  .player-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+  .player-row { display: flex; align-items: center; gap: 8px; background: var(--panel); border: 2px solid var(--border); border-radius: 12px; padding: 8px; }
+  .avatar-btn { font-size: 22px; background: var(--bg); border: none; border-radius: 10px; width: 42px; height: 42px; flex-shrink: 0; }
+  .name-input { flex: 1; border: none; background: transparent; font-size: 15px; color: var(--text); outline: none; min-width: 0; }
+  .remove-btn { background: transparent; border: none; color: var(--muted); font-size: 14px; padding: 6px; flex-shrink: 0; }
+  .add-player-btn {
+    display: block; width: 100%; background: var(--panel); border: 2px dashed var(--border); color: var(--muted);
+    border-radius: 12px; padding: 10px; font-size: 13px; margin-bottom: 16px;
+  }
+  .add-player-btn:disabled { opacity: 0.4; }
+  .start-btn { margin-top: 4px; }
+
+  /* ---- Board ---- */
+  .board-wrap { background: #d9f2e6; border: 3px solid var(--teal); border-radius: 18px; padding: 10px; margin-bottom: 14px; }
+  @media (prefers-color-scheme: dark) { .board-wrap { background: #16332c; } }
+  .board-grid { display: grid; grid-template-columns: repeat(7, 1fr); grid-template-rows: repeat(4, 1fr); gap: 3px; aspect-ratio: 7 / 4.2; }
+  .board-space {
+    background: var(--space); border-radius: 6px; position: relative;
+    display: flex; align-items: flex-start; justify-content: flex-start;
+    padding: 2px 3px; min-width: 0; min-height: 0;
+  }
+  .board-space.alt { background: var(--space-alt); }
+  .space-num { font-size: 8px; color: var(--muted); font-weight: 700; }
+  .space-tokens { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 1px; flex-wrap: wrap; font-size: 15px; }
+  .turn-panel { text-align: center; margin-bottom: 12px; }
+  .round-indicator { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .turn-banner { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+  .dice-display {
+    width: 56px; height: 56px; margin: 0 auto 12px; background: var(--panel); border: 3px solid var(--coral);
+    border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 800;
+  }
+  .star-strip { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 14px; }
+  .star-chip {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 999px;
+    padding: 5px 10px; font-size: 12px; display: flex; align-items: center; gap: 5px;
+  }
+  .star-chip .gold { color: var(--gold); font-weight: 700; }
+
+  /* ---- Minigame overlay ---- */
+  .mg-overlay { text-align: center; }
+  .mg-title { font-size: 22px; margin: 6px 0 4px; }
+  .mg-instructions { color: var(--muted); font-size: 13px; margin: 0 0 18px; }
+  .mg-area { background: var(--panel); border: 2px solid var(--border); border-radius: 16px; padding: 22px 16px; min-height: 220px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
+
+  .mg-tap-btn { width: 110px; height: 110px; border-radius: 50%; background: var(--gold); border: none; font-size: 44px; color: #fff; }
+  .mg-tap-btn:active { transform: scale(0.95); }
+  .mg-timer { font-size: 14px; color: var(--muted); }
+  .mg-count { font-size: 15px; font-weight: 700; }
+
+  .mg-reaction { width: 100%; padding: 60px 0; border-radius: 12px; font-size: 20px; font-weight: 800; color: #fff; }
+  .mg-reaction.waiting { background: var(--coral); }
+  .mg-reaction.go { background: var(--teal); }
+
+  .mg-memory-grid { display: grid; grid-template-columns: repeat(2, 70px); grid-template-rows: repeat(2, 70px); gap: 10px; }
+  .mg-tile { background: var(--space-alt); border-radius: 10px; transition: background 0.15s; }
+  .mg-tile.lit { background: var(--gold); }
+  .mg-memory-status { font-size: 13px; color: var(--muted); }
+
+  .mg-track { position: relative; width: 100%; height: 40px; background: var(--space); border-radius: 8px; overflow: hidden; }
+  .mg-zone { position: absolute; top: 0; bottom: 0; left: 40%; width: 20%; background: rgba(46,196,182,0.35); border-left: 2px dashed var(--teal); border-right: 2px dashed var(--teal); }
+  .mg-dot { position: absolute; top: 5px; width: 30px; height: 30px; border-radius: 50%; background: var(--coral); }
+  .mg-smash-btn { background: var(--coral); color: #fff; border: none; border-radius: 10px; padding: 12px 28px; font-weight: 800; font-size: 14px; }
+
+  .mg-hl-num { font-size: 44px; font-weight: 800; }
+  .mg-hl-streak { font-size: 13px; color: var(--muted); }
+  .mg-hl-actions { display: flex; gap: 10px; }
+  .mg-hl-actions button { flex: 1; padding: 12px; border-radius: 10px; border: 2px solid var(--border); background: var(--panel); font-weight: 700; color: var(--text); }
+
+  /* ---- Results / game over ---- */
+  .results-screen, .gameover-screen { text-align: center; }
+  .results-screen h2, .gameover-screen h1 { font-size: 20px; margin: 4px 0 16px; }
+  .results-list, .final-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+  .result-row, .final-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: 13px;
+  }
+  .result-row.won { border-color: var(--gold); background: rgba(255,190,11,0.12); }
+  .result-avatar { font-size: 18px; margin-right: 6px; }
+  .result-name { flex: 1; text-align: left; }
+  .result-star { color: var(--gold); font-weight: 700; font-size: 11px; }
+  .winner-avatar { font-size: 56px; margin-bottom: 10px; }
+
+  .site-footer {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+    padding: 10px 20px calc(10px + env(safe-area-inset-bottom));
+    background: var(--panel); border-top: 1px solid var(--border);
+    text-align: center; font-size: 12px; color: var(--muted);
+  }
+  .site-footer a { color: var(--muted); text-decoration: underline; }
+  .site-footer a:hover { color: var(--coral); }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<footer class="site-footer">built by <a href="https://adrianbudny.com" target="_blank" rel="noreferrer">ab</a></footer>
+
+<script>
+(function () {
+  const AVATARS = ["🦊", "🐙", "🤖", "🐲", "🦄", "👻", "🐼", "🦁"];
+
+  // Perimeter path around a WxH grid — the "board" is the outer ring of a
+  // 7x4 grid of cells, 18 spaces total. Interior cells are just left empty.
+  const GRID_W = 7, GRID_H = 4;
+  function computePath(w, h) {
+    const path = [];
+    for (let c = 0; c < w; c++) path.push({ r: 0, c });
+    for (let r = 1; r < h; r++) path.push({ r, c: w - 1 });
+    for (let c = w - 2; c >= 0; c--) path.push({ r: h - 1, c });
+    for (let r = h - 2; r >= 1; r--) path.push({ r, c: 0 });
+    return path;
+  }
+  const PATH = computePath(GRID_W, GRID_H);
+
+  const MINIGAMES = {
+    tapRace: {
+      name: "Tap Race",
+      instructions: "Tap the star as many times as you can in 5 seconds!",
+      start(container, onFinish) {
+        let taps = 0;
+        let timeLeft = 5;
+        container.innerHTML =
+          '<div class="mg-timer" id="mgTimer">5s</div>' +
+          '<button class="mg-tap-btn" id="tapBtn">★</button>' +
+          '<div class="mg-count">Taps: <span id="tapCount">0</span></div>';
+        const btn = container.querySelector("#tapBtn");
+        const countEl = container.querySelector("#tapCount");
+        const timerEl = container.querySelector("#mgTimer");
+        btn.addEventListener("click", () => {
+          taps++;
+          countEl.textContent = taps;
+        });
+        const interval = setInterval(() => {
+          timeLeft--;
+          timerEl.textContent = timeLeft + "s";
+          if (timeLeft <= 0) {
+            clearInterval(interval);
+            btn.disabled = true;
+            onFinish(Math.min(100, taps * 5));
+          }
+        }, 1000);
+      },
+    },
+    reaction: {
+      name: "Reaction Flash",
+      instructions: "Wait for green, then tap as fast as you can!",
+      start(container, onFinish) {
+        container.innerHTML = '<div class="mg-reaction waiting" id="reactZone">WAIT…</div>';
+        const zone = container.querySelector("#reactZone");
+        let goTime = null;
+        let done = false;
+        const delay = 900 + Math.random() * 2200;
+        const timeout = setTimeout(() => {
+          zone.className = "mg-reaction go";
+          zone.textContent = "TAP NOW!";
+          goTime = performance.now();
+        }, delay);
+        zone.addEventListener("click", () => {
+          if (done) return;
+          done = true;
+          if (goTime === null) {
+            clearTimeout(timeout);
+            zone.textContent = "Too soon!";
+            setTimeout(() => onFinish(0), 500);
+            return;
+          }
+          const ms = performance.now() - goTime;
+          zone.textContent = Math.round(ms) + "ms";
+          setTimeout(() => onFinish(Math.max(5, Math.round(100 - ms / 6))), 500);
+        });
+      },
+    },
+    memory: {
+      name: "Memory Sequence",
+      instructions: "Watch the sequence, then tap the tiles back in order.",
+      start(container, onFinish) {
+        const seqLen = 4;
+        const sequence = Array.from({ length: seqLen }, () => Math.floor(Math.random() * 4));
+        container.innerHTML =
+          '<div class="mg-memory-grid" id="memGrid">' +
+          [0, 1, 2, 3].map((t) => '<div class="mg-tile" data-t="' + t + '"></div>').join("") +
+          "</div>" +
+          '<div class="mg-memory-status" id="memStatus">Watch closely…</div>';
+        const status = container.querySelector("#memStatus");
+        const tileEls = [...container.querySelectorAll(".mg-tile")];
+        function playerTurn() {
+          status.textContent = "Your turn!";
+          let userStep = 0;
+          let finished = false;
+          tileEls.forEach((el) => {
+            el.addEventListener("click", () => {
+              if (finished) return;
+              if (Number(el.dataset.t) === sequence[userStep]) {
+                el.classList.add("lit");
+                setTimeout(() => el.classList.remove("lit"), 180);
+                userStep++;
+                if (userStep >= sequence.length) {
+                  finished = true;
+                  onFinish(100);
+                }
+              } else {
+                finished = true;
+                status.textContent = "Missed it!";
+                onFinish(Math.round((userStep / sequence.length) * 60));
+              }
+            });
+          });
+        }
+        function flash(i) {
+          if (i >= sequence.length) {
+            setTimeout(playerTurn, 300);
+            return;
+          }
+          tileEls[sequence[i]].classList.add("lit");
+          setTimeout(() => {
+            tileEls[sequence[i]].classList.remove("lit");
+            setTimeout(() => flash(i + 1), 220);
+          }, 480);
+        }
+        setTimeout(() => flash(0), 500);
+      },
+    },
+    zoneSmash: {
+      name: "Zone Smash",
+      instructions: "Tap SMASH when the dot is in the highlighted zone!",
+      start(container, onFinish) {
+        container.innerHTML =
+          '<div class="mg-track"><div class="mg-zone"></div><div class="mg-dot" id="mgDot"></div></div>' +
+          '<button class="mg-smash-btn" id="mgSmashBtn">SMASH</button>';
+        const dot = container.querySelector("#mgDot");
+        const btn = container.querySelector("#mgSmashBtn");
+        const start = performance.now();
+        const duration = 1100;
+        let raf;
+        function step(now) {
+          const t = ((now - start) % duration) / duration;
+          dot.style.left = t * 92 + "%";
+          raf = requestAnimationFrame(step);
+        }
+        raf = requestAnimationFrame(step);
+        btn.addEventListener(
+          "click",
+          () => {
+            cancelAnimationFrame(raf);
+            const left = parseFloat(dot.style.left || "0");
+            const dist = Math.abs(50 - left);
+            onFinish(Math.max(5, Math.round(100 - dist * 2.2)));
+          },
+          { once: true }
+        );
+      },
+    },
+    higherLower: {
+      name: "Higher or Lower",
+      instructions: "Guess if the next number is higher or lower — build a streak!",
+      start(container, onFinish) {
+        let current = Math.floor(Math.random() * 100);
+        let streak = 0;
+        let rounds = 0;
+        const maxRounds = 5;
+        function paint() {
+          container.innerHTML =
+            '<div class="mg-hl-num">' + current + "</div>" +
+            '<div class="mg-hl-streak">Streak: ' + streak + "</div>" +
+            '<div class="mg-hl-actions"><button id="lowerBtn">Lower</button><button id="higherBtn">Higher</button></div>';
+          container.querySelector("#lowerBtn").addEventListener("click", () => guess("lower"));
+          container.querySelector("#higherBtn").addEventListener("click", () => guess("higher"));
+        }
+        function guess(dir) {
+          const next = Math.floor(Math.random() * 100);
+          const correct = dir === "higher" ? next >= current : next <= current;
+          if (correct) streak++;
+          current = next;
+          rounds++;
+          if (rounds >= maxRounds) onFinish(Math.min(100, streak * 22));
+          else paint();
+        }
+        paint();
+      },
+    },
+  };
+
+  function newPlayer(i) {
+    return { id: "p" + i, name: "", avatar: AVATARS[i % AVATARS.length], isBot: i !== 0, position: 0, stars: 0 };
+  }
+
+  let state;
+  function resetState() {
+    state = {
+      screen: "lobby",
+      players: [newPlayer(0), newPlayer(1)],
+      turnIndex: 0,
+      round: 1,
+      totalRounds: 8,
+      lastRoll: null,
+      animating: false,
+      currentGameKey: null,
+      roundResults: [],
+    };
+  }
+  resetState();
+
+  const root = document.getElementById("app");
+
+  function render() {
+    if (state.screen === "lobby") renderLobby();
+    else if (state.screen === "board") renderBoard();
+    else if (state.screen === "minigame") renderMinigameScreen();
+    else if (state.screen === "roundresult") renderRoundResult();
+    else if (state.screen === "gameover") renderGameOver();
+  }
+
+  function renderLobby() {
+    root.innerHTML =
+      '<h1 class="game-title">Star Rally</h1>' +
+      '<p class="lobby-sub">2–6 players. You play; everyone else is simulated for this demo.</p>' +
+      '<div class="player-list">' +
+      state.players
+        .map(
+          (p, i) =>
+            '<div class="player-row">' +
+            '<button class="avatar-btn" data-i="' + i + '">' + p.avatar + "</button>" +
+            '<input class="name-input" data-i="' + i + '" placeholder="' + (i === 0 ? "Your name" : "Bot name") + '" value="' + p.name + '">' +
+            (state.players.length > 2 && i !== 0 ? '<button class="remove-btn" data-i="' + i + '">✕</button>' : "") +
+            "</div>"
+        )
+        .join("") +
+      "</div>" +
+      '<button class="add-player-btn" id="addPlayerBtn"' + (state.players.length >= 6 ? " disabled" : "") + ">+ Add Player</button>" +
+      '<button class="primary-btn start-btn" id="startBtn">Start Game</button>';
+
+    root.querySelectorAll(".avatar-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const i = Number(btn.dataset.i);
+        const cur = AVATARS.indexOf(state.players[i].avatar);
+        state.players[i].avatar = AVATARS[(cur + 1) % AVATARS.length];
+        render();
+      });
+    });
+    root.querySelectorAll(".name-input").forEach((inp) => {
+      inp.addEventListener("input", () => {
+        state.players[Number(inp.dataset.i)].name = inp.value;
+      });
+    });
+    root.querySelectorAll(".remove-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        state.players.splice(Number(btn.dataset.i), 1);
+        render();
+      });
+    });
+    const addBtn = document.getElementById("addPlayerBtn");
+    if (addBtn) {
+      addBtn.addEventListener("click", () => {
+        if (state.players.length < 6) {
+          state.players.push(newPlayer(state.players.length));
+          render();
+        }
+      });
+    }
+    document.getElementById("startBtn").addEventListener("click", () => {
+      state.players.forEach((p, i) => {
+        if (!p.name.trim()) p.name = i === 0 ? "You" : "Bot " + i;
+      });
+      state.screen = "board";
+      state.turnIndex = 0;
+      render();
+    });
+  }
+
+  function renderBoard() {
+    const current = state.players[state.turnIndex];
+    root.innerHTML =
+      '<div class="board-wrap"><div class="board-grid">' +
+      PATH.map((pos, i) => {
+        const occupants = state.players.filter((p) => p.position === i);
+        return (
+          '<div class="board-space' + (i % 2 === 0 ? " alt" : "") + '" style="grid-column:' + (pos.c + 1) + ";grid-row:" + (pos.r + 1) + '">' +
+          '<span class="space-num">' + (i + 1) + "</span>" +
+          '<div class="space-tokens">' + occupants.map((p) => "<span>" + p.avatar + "</span>").join("") + "</div>" +
+          "</div>"
+        );
+      }).join("") +
+      "</div></div>" +
+      '<div class="turn-panel">' +
+      '<div class="round-indicator">Round ' + state.round + " / " + state.totalRounds + "</div>" +
+      '<div class="turn-banner">' + current.name + (current.id === "p0" ? " (You)" : "") + "'s turn</div>" +
+      '<div class="dice-display">' + (state.lastRoll ?? "–") + "</div>" +
+      '<button class="primary-btn" id="rollBtn"' + (state.animating || current.isBot ? " disabled" : "") + ">" +
+      (state.animating ? "Rolling…" : "Roll Dice") +
+      "</button>" +
+      "</div>" +
+      '<div class="star-strip">' +
+      state.players.map((p) => '<div class="star-chip"><span>' + p.avatar + "</span>" + p.name + ' <span class="gold">★ ' + p.stars + "</span></div>").join("") +
+      "</div>";
+    const rollBtn = document.getElementById("rollBtn");
+    if (rollBtn && !rollBtn.disabled) rollBtn.addEventListener("click", () => takeTurn(state.turnIndex));
+  }
+
+  function takeTurn(idx) {
+    if (state.animating) return;
+    state.animating = true;
+    render();
+    let flickers = 0;
+    const flickerInt = setInterval(() => {
+      state.lastRoll = 1 + Math.floor(Math.random() * 6);
+      render();
+      flickers++;
+      if (flickers >= 6) {
+        clearInterval(flickerInt);
+        const roll = 1 + Math.floor(Math.random() * 6);
+        state.lastRoll = roll;
+        moveSteps(idx, roll, () => {
+          state.animating = false;
+          advanceTurn();
+        });
+      }
+    }, 90);
+  }
+
+  function moveSteps(idx, steps, onDone) {
+    let moved = 0;
+    const mv = setInterval(() => {
+      state.players[idx].position = (state.players[idx].position + 1) % PATH.length;
+      moved++;
+      render();
+      if (moved >= steps) {
+        clearInterval(mv);
+        onDone();
+      }
+    }, 170);
+  }
+
+  function advanceTurn() {
+    state.turnIndex++;
+    if (state.turnIndex >= state.players.length) {
+      state.turnIndex = 0;
+      startMinigame();
+      return;
+    }
+    render();
+    if (state.players[state.turnIndex].isBot) {
+      setTimeout(() => takeTurn(state.turnIndex), 550);
+    }
+  }
+
+  function startMinigame() {
+    const keys = Object.keys(MINIGAMES);
+    state.currentGameKey = keys[Math.floor(Math.random() * keys.length)];
+    state.screen = "minigame";
+    render();
+  }
+
+  function renderMinigameScreen() {
+    const game = MINIGAMES[state.currentGameKey];
+    root.innerHTML =
+      '<div class="mg-overlay">' +
+      '<h2 class="mg-title">' + game.name + "</h2>" +
+      '<p class="mg-instructions">' + game.instructions + "</p>" +
+      '<div class="mg-area" id="mgArea"></div>' +
+      "</div>";
+    const area = document.getElementById("mgArea");
+    const human = state.players[0];
+    game.start(area, (score) => {
+      const results = [{ playerId: human.id, score }];
+      state.players.slice(1).forEach((p) => {
+        results.push({ playerId: p.id, score: 25 + Math.floor(Math.random() * 70) });
+      });
+      const max = Math.max(...results.map((r) => r.score));
+      results.forEach((r) => {
+        if (r.score === max) state.players.find((p) => p.id === r.playerId).stars++;
+      });
+      state.roundResults = results;
+      state.roundResultMax = max;
+      state.screen = "roundresult";
+      render();
+    });
+  }
+
+  function renderRoundResult() {
+    const ranked = [...state.roundResults].sort((a, b) => b.score - a.score);
+    root.innerHTML =
+      '<h2>' + MINIGAMES[state.currentGameKey].name + " Results</h2>" +
+      '<div class="results-list">' +
+      ranked
+        .map((r) => {
+          const p = state.players.find((pl) => pl.id === r.playerId);
+          const won = r.score === state.roundResultMax;
+          return (
+            '<div class="result-row' + (won ? " won" : "") + '">' +
+            '<span class="result-avatar">' + p.avatar + "</span>" +
+            '<span class="result-name">' + p.name + (p.id === "p0" ? " (You)" : "") + "</span>" +
+            '<span class="result-score">' + r.score + "</span>" +
+            (won ? '<span class="result-star">+1 ★</span>' : "") +
+            "</div>"
+          );
+        })
+        .join("") +
+      "</div>" +
+      '<button class="primary-btn" id="continueBtn">Continue</button>';
+    document.getElementById("continueBtn").addEventListener("click", () => {
+      state.round++;
+      state.screen = state.round > state.totalRounds ? "gameover" : "board";
+      render();
+    });
+  }
+
+  function renderGameOver() {
+    const ranked = [...state.players].sort((a, b) => b.stars - a.stars);
+    const winner = ranked[0];
+    root.innerHTML =
+      '<h1>' + winner.name + " Wins!</h1>" +
+      '<div class="winner-avatar">' + winner.avatar + "</div>" +
+      '<div class="final-list">' +
+      ranked
+        .map(
+          (p, i) =>
+            '<div class="final-row"><span>' + (i + 1) + ". " + p.avatar + " " + p.name + (p.id === "p0" ? " (You)" : "") + "</span><span>★ " + p.stars + "</span></div>"
+        )
+        .join("") +
+      "</div>" +
+      '<button class="primary-btn" id="playAgainBtn">Play Again</button>';
+    document.getElementById("playAgainBtn").addEventListener("click", () => {
+      resetState();
+      render();
+    });
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
