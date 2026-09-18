@@ -28,9 +28,13 @@ export default async function handler(request) {
     });
   }
 
-  const email = (body && body.email) || "";
-  const pw = (body && body.password) || "";
-  if (email !== ALLOWED_EMAIL || pw !== password) {
+  // Trim + lowercase the email before comparing — mobile keyboards
+  // (notably iOS Safari) can autocapitalize the first letter of an email
+  // field even with type="email", which would otherwise silently reject a
+  // correctly-typed login. Password is trimmed only (case matters there).
+  const email = ((body && body.email) || "").trim().toLowerCase();
+  const pw = ((body && body.password) || "").trim();
+  if (email !== ALLOWED_EMAIL.toLowerCase() || pw !== password) {
     return new Response(JSON.stringify({ error: "Incorrect email or password" }), {
       status: 401,
       headers: { "Content-Type": "application/json" },
