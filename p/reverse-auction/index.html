@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reverse Auction</title>
+<meta name="description" content="Post a task, watch specialists bid the price down in real time, accept a winner.">
+<style>
+  :root{
+    --bg:#08080d;
+    --bg-2:#0d0d14;
+    --panel:#131320;
+    --panel-2:#191928;
+    --border:#2a2a3d;
+    --border-soft:#20202f;
+    --text:#f3f2f8;
+    --text-dim:#a9a6bb;
+    --muted:#6d6a80;
+    --accent:#ff2e55;
+    --accent-2:#ffb020;
+    --accent-soft:rgba(255,46,85,0.14);
+    --good:#33e28a;
+    --good-soft:rgba(51,226,138,0.14);
+    --font-display:'Archivo Black','Arial Black','Helvetica Neue',Impact,sans-serif;
+    --font-body:'Inter','Segoe UI','Helvetica Neue',Arial,sans-serif;
+    --font-mono:'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,'Courier New',monospace;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 12% -10%, rgba(255,46,85,0.16), transparent 45%),
+      radial-gradient(circle at 90% 0%, rgba(255,176,32,0.10), transparent 40%),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--font-body);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .app{min-height:100vh;display:flex;flex-direction:column;padding-bottom:74px;}
+
+  /* ---------- topbar ---------- */
+  .topbar{
+    padding:28px 24px 18px;
+    border-bottom:1px solid var(--border-soft);
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    background:linear-gradient(180deg, rgba(255,46,85,0.06), transparent);
+  }
+  .brand{
+    font-family:var(--font-display);
+    letter-spacing:0.5px;
+    font-size:22px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .brand-mark{
+    color:var(--accent);
+    font-size:22px;
+    filter:drop-shadow(0 0 8px rgba(255,46,85,0.7));
+  }
+  .tagline{color:var(--text-dim);font-size:13.5px;max-width:560px;}
+
+  /* ---------- layout ---------- */
+  .layout{
+    flex:1;
+    display:grid;
+    grid-template-columns:360px 1fr;
+    gap:22px;
+    padding:22px 24px 40px;
+    max-width:1240px;
+    width:100%;
+    margin:0 auto;
+    align-items:start;
+  }
+  @media (max-width:900px){
+    .layout{grid-template-columns:1fr;padding:18px 16px 32px;gap:20px;}
+  }
+
+  /* ---------- post panel ---------- */
+  .post-panel{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:20px;
+    position:sticky;
+    top:16px;
+  }
+  @media (max-width:900px){ .post-panel{position:static;} }
+
+  .post-panel h2, .auctions-head h2{
+    font-family:var(--font-display);
+    font-size:15px;
+    letter-spacing:0.4px;
+    margin:0 0 4px;
+    text-transform:uppercase;
+  }
+  .post-sub{color:var(--muted);font-size:12.5px;margin:0 0 16px;}
+
+  label{
+    display:block;
+    font-size:11.5px;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    color:var(--text-dim);
+    margin:14px 0 6px;
+  }
+  label:first-of-type{margin-top:0;}
+  input[type="text"],input[type="number"],input[type="datetime-local"],textarea{
+    width:100%;
+    background:var(--bg-2);
+    border:1px solid var(--border);
+    border-radius:9px;
+    color:var(--text);
+    font-family:var(--font-body);
+    font-size:14px;
+    padding:10px 12px;
+    outline:none;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  textarea{resize:vertical;min-height:64px;line-height:1.4;}
+  input:focus,textarea:focus{
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px var(--accent-soft);
+  }
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+  .btn{
+    appearance:none;
+    border:none;
+    cursor:pointer;
+    font-family:var(--font-body);
+    font-weight:700;
+    border-radius:9px;
+    transition:transform .1s, filter .15s, box-shadow .15s;
+  }
+  .btn:active{transform:scale(0.97);}
+  .btn-primary{
+    width:100%;
+    margin-top:18px;
+    padding:13px 16px;
+    background:linear-gradient(135deg,var(--accent),#ff6a3d);
+    color:#150507;
+    font-size:14.5px;
+    letter-spacing:0.3px;
+    box-shadow:0 6px 20px -6px rgba(255,46,85,0.6);
+  }
+  .btn-primary:hover{filter:brightness(1.08);}
+
+  .post-note{
+    margin-top:12px;
+    font-size:11.5px;
+    color:var(--muted);
+    line-height:1.5;
+  }
+
+  /* ---------- auctions column ---------- */
+  .auctions-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom:14px;
+    flex-wrap:wrap;
+    gap:6px;
+  }
+  .legend{font-size:11.5px;color:var(--muted);display:flex;gap:14px;}
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .dot{width:7px;height:7px;border-radius:50%;display:inline-block;}
+  .dot.open{background:var(--accent);box-shadow:0 0 6px var(--accent);}
+  .dot.accepted{background:var(--good);box-shadow:0 0 6px var(--good);}
+
+  .task-list{display:flex;flex-direction:column;gap:18px;}
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    overflow:hidden;
+    animation:cardIn .35s ease;
+  }
+  @keyframes cardIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+
+  .card-head{
+    padding:16px 18px 12px;
+    border-bottom:1px solid var(--border-soft);
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .card-titles{min-width:0;}
+  .card-title{font-size:16.5px;font-weight:800;margin:0 0 3px;letter-spacing:0.2px;}
+  .card-desc{color:var(--text-dim);font-size:13px;line-height:1.45;margin:0;}
+
+  .status-pill{
+    flex:none;
+    font-size:10.5px;
+    font-weight:800;
+    letter-spacing:0.6px;
+    text-transform:uppercase;
+    padding:5px 10px;
+    border-radius:999px;
+    height:fit-content;
+    white-space:nowrap;
+    display:flex;
+    align-items:center;
+    gap:5px;
+  }
+  .status-pill.open{background:var(--accent-soft);color:#ff8ba0;border:1px solid rgba(255,46,85,0.4);}
+  .status-pill.accepted{background:var(--good-soft);color:#7cf0b6;border:1px solid rgba(51,226,138,0.4);}
+  .status-pill.completed{background:rgba(255,255,255,0.06);color:var(--muted);border:1px solid var(--border);}
+  .pulse{
+    width:6px;height:6px;border-radius:50%;background:currentColor;
+    animation:pulse 1.1s infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.25;}}
+
+  .card-meta{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px 18px;
+    padding:12px 18px;
+    background:var(--bg-2);
+    border-bottom:1px solid var(--border-soft);
+  }
+  .meta-item{font-size:12px;color:var(--text-dim);}
+  .meta-item b{color:var(--text);font-family:var(--font-mono);}
+  .meta-item.urgent b{color:var(--accent-2);}
+  .meta-item.expired b{color:var(--muted);}
+
+  .ticker-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 18px;
+    gap:10px;
+  }
+  .ticker-label{font-size:11px;letter-spacing:0.6px;text-transform:uppercase;color:var(--muted);}
+  .ticker-price{
+    font-family:var(--font-mono);
+    font-size:30px;
+    font-weight:700;
+    color:var(--accent-2);
+    line-height:1;
+  }
+  .ticker-price.empty{color:var(--muted);font-size:18px;font-weight:500;}
+  .ticker-price.flash{animation:flash .5s ease;}
+  @keyframes flash{
+    0%{ text-shadow:0 0 0 rgba(255,176,32,0); transform:scale(1.12); }
+    30%{ text-shadow:0 0 16px rgba(255,176,32,0.9); }
+    100%{ text-shadow:0 0 0 rgba(255,176,32,0); transform:scale(1); }
+  }
+  .ticker-sub{font-size:11.5px;color:var(--muted);}
+
+  .bid-feed{
+    max-height:230px;
+    overflow-y:auto;
+    padding:0 18px 14px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .bid-feed::-webkit-scrollbar{width:7px;}
+  .bid-feed::-webkit-scrollbar-thumb{background:var(--border);border-radius:6px;}
+  .bid-feed::-webkit-scrollbar-track{background:transparent;}
+
+  .bid-empty{
+    color:var(--muted);
+    font-size:12.5px;
+    padding:14px 0 4px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .bid-empty .pulse{background:var(--accent);color:var(--accent);}
+
+  .bid-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:var(--panel-2);
+    border:1px solid var(--border-soft);
+    border-radius:10px;
+    padding:9px 10px;
+    animation:bidIn .4s ease;
+  }
+  @keyframes bidIn{
+    from{opacity:0;transform:translateY(-8px) scale(.98);background:rgba(255,176,32,0.18);}
+    to{opacity:1;transform:none;}
+  }
+  .bid-avatar{
+    flex:none;
+    width:30px;height:30px;border-radius:50%;
+    background:linear-gradient(135deg,#2a2a3d,#191928);
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:800;color:var(--text-dim);
+    border:1px solid var(--border);
+  }
+  .bid-info{flex:1;min-width:0;}
+  .bid-name{font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .bid-badge{
+    font-size:9.5px;
+    text-transform:uppercase;
+    letter-spacing:0.4px;
+    color:var(--accent-2);
+    background:rgba(255,176,32,0.12);
+    border:1px solid rgba(255,176,32,0.35);
+    padding:1px 6px;
+    border-radius:999px;
+    font-weight:700;
+  }
+  .bid-stars{font-size:11px;color:var(--accent-2);letter-spacing:1px;}
+  .bid-stars .num{color:var(--muted);font-size:10.5px;margin-left:3px;letter-spacing:0;}
+  .bid-amount{
+    font-family:var(--font-mono);
+    font-weight:700;
+    font-size:15px;
+    color:var(--text);
+    flex:none;
+  }
+  .bid-accept{
+    flex:none;
+    font-size:11px;
+    font-weight:700;
+    padding:7px 10px;
+    background:transparent;
+    color:var(--good);
+    border:1px solid rgba(51,226,138,0.45);
+  }
+  .bid-accept:hover{background:var(--good-soft);}
+
+  .winner-box{
+    margin:0 18px 16px;
+    padding:14px;
+    border-radius:12px;
+    background:var(--good-soft);
+    border:1px solid rgba(51,226,138,0.35);
+  }
+  .winner-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;}
+  .winner-name{font-weight:800;font-size:14.5px;}
+  .winner-amount{font-family:var(--font-mono);font-weight:700;color:var(--good);font-size:18px;}
+  .winner-sub{font-size:12px;color:var(--text-dim);margin:2px 0 10px;}
+  .winner-actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .btn-ghost{
+    padding:9px 14px;
+    font-size:12.5px;
+    background:transparent;
+    color:var(--text);
+    border:1px solid var(--border);
+  }
+  .btn-ghost:hover{border-color:var(--accent-2);color:var(--accent-2);}
+  .btn-good{
+    padding:9px 14px;
+    font-size:12.5px;
+    background:var(--good);
+    color:#052015;
+  }
+  .btn-good:hover{filter:brightness(1.08);}
+
+  .review-box{
+    margin:0 18px 16px;
+    padding:14px;
+    border-radius:12px;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+  }
+  .review-title{font-size:13px;font-weight:700;margin:0 0 8px;}
+  .star-picker{font-size:24px;letter-spacing:4px;cursor:pointer;user-select:none;margin-bottom:12px;}
+  .star-picker span{color:var(--border);transition:color .1s;}
+  .star-picker span.on{color:var(--accent-2);}
+
+  .paid-box{
+    margin:0 18px 16px;
+    padding:14px;
+    border-radius:12px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid var(--border);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .paid-left b{display:block;font-size:14px;}
+  .paid-left span{font-size:12px;color:var(--muted);}
+  .paid-amount{font-family:var(--font-mono);font-weight:700;font-size:18px;color:var(--muted);}
+
+  /* ---------- footer ---------- */
+  .site-footer{
+    position:fixed;
+    left:0;right:0;bottom:0;
+    z-index:10;
+    padding:10px 20px calc(10px + env(safe-area-inset-bottom));
+    background:var(--panel);
+    border-top:1px solid var(--border);
+    text-align:center;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .site-footer a{color:var(--muted);text-decoration:underline;}
+  .site-footer a:hover{color:var(--accent);}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">&#9889;</span>REVERSE AUCTION</div>
+    <p class="tagline">Post the job. Watch specialists undercut each other in real time. Pick your winner &mdash; pay when it's done.</p>
+  </header>
+
+  <main class="layout">
+    <section class="post-panel">
+      <h2>Post a Task</h2>
+      <p class="post-sub">Set your ceiling. Let the bidding do the work.</p>
+      <form id="postForm">
+        <label for="f-title">Task title</label>
+        <input type="text" id="f-title" placeholder="e.g. Repaint the hallway" maxlength="70" required>
+
+        <label for="f-desc">Description</label>
+        <textarea id="f-desc" placeholder="What needs doing, and anything a bidder should know." maxlength="240" required></textarea>
+
+        <div class="row2">
+          <div>
+            <label for="f-deadline">Deadline</label>
+            <input type="datetime-local" id="f-deadline" required>
+          </div>
+          <div>
+            <label for="f-budget">Max budget ($)</label>
+            <input type="number" id="f-budget" min="5" max="20000" step="1" placeholder="150" required>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Launch Auction &#9889;</button>
+        <p class="post-note">Bids are simulated for this prototype &mdash; 5&ndash;20 mock specialists will start racing each other down the moment you launch.</p>
+      </form>
+    </section>
+
+    <section class="auctions">
+      <div class="auctions-head">
+        <h2>Live Auctions</h2>
+        <div class="legend">
+          <span><i class="dot open"></i>Bidding open</span>
+          <span><i class="dot accepted"></i>Accepted</span>
+        </div>
+      </div>
+      <div id="taskList" class="task-list"></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">built by <a href="https://adrianbudny.com" target="_blank" rel="noreferrer">ab</a></footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var NOW = Date.now();
+
+  /* ---------------- helpers ---------------- */
+  function rand(min,max){ return Math.random()*(max-min)+min; }
+  function randInt(min,max){ return Math.floor(rand(min,max+1)); }
+  function pick(arr){ return arr[randInt(0,arr.length-1)]; }
+  function round2(n){ return Math.round(n*100)/100; }
+  function money(n){
+    return '$' + n.toLocaleString('en-US', {minimumFractionDigits: (n % 1 === 0 ? 0 : 2), maximumFractionDigits:2});
+  }
+  function initials(name){
+    var parts = name.replace(/[,—-].*$/,'').trim().split(/\s+/);
+    return (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+  }
+  function starString(rating){
+    var full = Math.round(rating);
+    var s = '';
+    for (var i=0;i<5;i++) s += (i < full ? '★' : '☆');
+    return s;
+  }
+  function esc(str){
+    var d = document.createElement('div');
+    d.textContent = str == null ? '' : str;
+    return d.innerHTML;
+  }
+  function fmtCountdown(ms){
+    if (ms <= 0) return 'deadline passed';
+    var s = Math.floor(ms/1000);
+    var d = Math.floor(s/86400); s -= d*86400;
+    var h = Math.floor(s/3600); s -= h*3600;
+    var m = Math.floor(s/60); s -= m*60;
+    if (d > 0) return d + 'd ' + h + 'h ' + m + 'm left';
+    if (h > 0) return h + 'h ' + m + 'm ' + s + 's left';
+    return m + 'm ' + s + 's left';
+  }
+  function fmtDeadlineLabel(ts, fallback){
+    if (fallback) return fallback;
+    var dt = new Date(ts);
+    return dt.toLocaleString('en-US', {weekday:'short', hour:'numeric', minute:'2-digit'});
+  }
+
+  var NAME_POOL = [
+    'Alex Rivera','Jordan Blake','Sam Whitfield','Casey Nolan','Morgan Diaz',
+    'Riley Thackeray','Taylor Osei','Jamie Kowalski','Drew Falconer','Avery Lindqvist',
+    'Quinn Ashworth','Reese Callahan','Harper Voss','Rowan Delacroix','Skyler Mbeki',
+    'Emerson Vance','Finley Okonkwo','Dakota Reyes','Marlowe Chen','Sawyer Kildare'
+  ];
+  var usedNames = {};
+  function randomName(){
+    var pool = NAME_POOL.filter(function(n){ return !usedNames[n]; });
+    if (!pool.length){ pool = NAME_POOL; usedNames = {}; }
+    var n = pick(pool);
+    usedNames[n] = true;
+    return n;
+  }
+  function randomRating(){ return round2(rand(3.5,5.0)).toFixed(1)*1; }
+
+  /* ---------------- state ---------------- */
+  var timers = {}; // taskId -> [timeoutIds]
+  var bidSeq = 0;
+
+  var tasks = [
+    {
+      id: 't1',
+      title: 'Fix leaky kitchen faucet',
+      description: 'Steady drip under the sink, worse when the hot tap is used. Parts on hand if needed.',
+      deadlineTs: NOW + 29*60*60*1000,
+      deadlineLabel: 'Wed, 6:00 PM',
+      maxBudget: 150,
+      status: 'open',
+      flowStep: 'progress',
+      bids: [],
+      lowest: null,
+      acceptedBid: null,
+      reviewRating: 0,
+      presetBids: [
+        { delay: 2400,  name: 'Dave Holloway',          rating: 4.2, amount: 140 },
+        { delay: 6800,  name: 'Priya Natarajan',         rating: 4.6, amount: 112 },
+        { delay: 12200, name: 'Mike Reyes — Licensed Plumber', rating: 4.8, amount: 89, badge: 'Top rated' }
+      ]
+    },
+    {
+      id: 't2',
+      title: 'Write my MBA personal statement',
+      description: '650-word statement for a Round 2 application. Notes and a rough draft ready to share.',
+      deadlineTs: NOW + 3*24*60*60*1000,
+      deadlineLabel: 'Fri, 11:59 PM',
+      maxBudget: 200,
+      status: 'open',
+      flowStep: 'progress',
+      bids: [],
+      lowest: null,
+      acceptedBid: null,
+      reviewRating: 0,
+      presetBids: [
+        { delay: 1500,  name: 'Grace Liu',      rating: 3.9, amount: 195 },
+        { delay: 3200,  name: 'Tom Baxter',      rating: 4.0, amount: 178 },
+        { delay: 5000,  name: 'Nadia Okafor',    rating: 4.3, amount: 160 },
+        { delay: 7000,  name: 'Ethan Brooks',    rating: 3.7, amount: 150 },
+        { delay: 9200,  name: 'Wei Zhang',       rating: 4.5, amount: 130 },
+        { delay: 11500, name: 'Sofia Marchetti', rating: 4.1, amount: 110 },
+        { delay: 14000, name: 'Carlos Mendez',   rating: 4.4, amount: 95 },
+        { delay: 16800, name: 'Amara Johnson',   rating: 4.6, amount: 80 },
+        { delay: 19500, name: 'Sarah Kim — Ex-MBA Admissions Officer', rating: 4.9, amount: 65, badge: 'Ex-Admissions Officer' },
+        { delay: 22000, name: 'Ravi Shah',       rating: 3.8, amount: 58 },
+        { delay: 24800, name: 'Jenna Price',     rating: 4.0, amount: 50 },
+        { delay: 27500, name: 'Leo Fischer',     rating: 3.6, amount: 45 }
+      ]
+    },
+    {
+      id: 't3',
+      title: 'Audit my 2025 tax return',
+      description: 'Self-filed, want a second pair of eyes before an amendment deadline. PDF ready to send.',
+      deadlineTs: NOW + 6*60*60*1000,
+      deadlineLabel: 'ASAP',
+      maxBudget: 500,
+      status: 'open',
+      flowStep: 'progress',
+      bids: [],
+      lowest: null,
+      acceptedBid: null,
+      reviewRating: 0,
+      presetBids: [
+        { delay: 1200,  name: 'Owen Park',        rating: 3.9, amount: 480 },
+        { delay: 2800,  name: 'Alicia Gomez',      rating: 4.1, amount: 420 },
+        { delay: 4300,  name: 'Derek Chan',        rating: 4.0, amount: 350 },
+        { delay: 6000,  name: 'Priya Kapoor',      rating: 4.4, amount: 300 },
+        { delay: 7800,  name: 'Marcus Webb',       rating: 4.2, amount: 260 },
+        { delay: 9600,  name: 'Hannah Ford',       rating: 4.5, amount: 220 },
+        { delay: 11500, name: 'Tomasz Nowak',      rating: 4.3, amount: 195 },
+        { delay: 13500, name: 'Janet Liu, CPA',    rating: 4.9, amount: 180, badge: 'Free 2026 tax plan' }
+      ]
+    }
+  ];
+
+  /* ---------------- bid engine ---------------- */
+  function scheduleTaskBids(task){
+    timers[task.id] = timers[task.id] || [];
+    if (task.presetBids){
+      task.presetBids.forEach(function(pb){
+        var id = setTimeout(function(){
+          if (task.status !== 'open') return;
+          addBid(task, {
+            id: 'b' + (++bidSeq),
+            name: pb.name, rating: pb.rating, amount: pb.amount,
+            badge: pb.badge, ts: Date.now()
+          });
+        }, pb.delay);
+        timers[task.id].push(id);
+      });
+    } else {
+      var n = randInt(6, 18);
+      var lowest = task.maxBudget;
+      var cum = 900;
+      for (var i=0;i<n;i++){
+        (function(index){
+          cum += randInt(1000, 4000);
+          var id = setTimeout(function(){
+            if (task.status !== 'open') return;
+            var amount;
+            if (index === 0){
+              amount = round2(task.maxBudget * rand(0.65, 0.92));
+            } else if (Math.random() < 0.78){
+              amount = round2(Math.max(task.maxBudget*0.12, lowest * rand(0.72, 0.97)));
+            } else {
+              amount = round2(rand(task.maxBudget*0.2, task.maxBudget*0.9));
+            }
+            amount = Math.max(5, amount);
+            if (amount < lowest) lowest = amount;
+            addBid(task, {
+              id: 'b' + (++bidSeq),
+              name: randomName(), rating: randomRating(), amount: amount,
+              ts: Date.now()
+            });
+          }, cum);
+          timers[task.id].push(id);
+        })(i);
+      }
+    }
+  }
+
+  function clearTaskTimers(taskId){
+    (timers[taskId] || []).forEach(function(id){ clearTimeout(id); });
+    timers[taskId] = [];
+  }
+
+  function addBid(task, bid){
+    task.bids.push(bid);
+    if (task.lowest === null || bid.amount < task.lowest) task.lowest = bid.amount;
+    renderBidRow(task, bid, true);
+    updateTicker(task, true);
+    updateBidCount(task);
+    var emptyEl = document.getElementById('empty-' + task.id);
+    if (emptyEl) emptyEl.remove();
+  }
+
+  /* ---------------- rendering ---------------- */
+  function statusPillHtml(task){
+    if (task.status === 'open'){
+      return '<span class="status-pill open"><i class="pulse"></i>Bidding open</span>';
+    } else if (task.status === 'accepted'){
+      return '<span class="status-pill accepted">&#10003; Accepted</span>';
+    }
+    return '<span class="status-pill completed">&#10003; Completed</span>';
+  }
+
+  function bidRowHtml(task, bid){
+    var acceptBtn = task.status === 'open'
+      ? '<button class="btn bid-accept" data-accept="' + bid.id + '" data-task="' + task.id + '">Accept</button>'
+      : '';
+    var badge = bid.badge ? '<span class="bid-badge">' + esc(bid.badge) + '</span>' : '';
+    return (
+      '<div class="bid-row" id="row-' + bid.id + '">' +
+        '<div class="bid-avatar">' + esc(initials(bid.name)) + '</div>' +
+        '<div class="bid-info">' +
+          '<div class="bid-name">' + esc(bid.name) + badge + '</div>' +
+          '<div class="bid-stars">' + starString(bid.rating) + '<span class="num">' + bid.rating.toFixed(1) + '</span></div>' +
+        '</div>' +
+        '<div class="bid-amount">' + money(bid.amount) + '</div>' +
+        acceptBtn +
+      '</div>'
+    );
+  }
+
+  function renderBidRow(task, bid, animate){
+    var feed = document.getElementById('feed-' + task.id);
+    if (!feed) return;
+    var wrap = document.createElement('div');
+    wrap.innerHTML = bidRowHtml(task, bid);
+    var row = wrap.firstChild;
+    feed.insertBefore(row, feed.firstChild);
+  }
+
+  function updateBidCount(task){
+    var el = document.getElementById('count-' + task.id);
+    if (el) el.textContent = task.bids.length + (task.bids.length === 1 ? ' bid' : ' bids');
+  }
+
+  function updateTicker(task, flash){
+    var priceEl = document.getElementById('price-' + task.id);
+    if (!priceEl) return;
+    if (task.lowest === null){
+      priceEl.textContent = 'Waiting for bids…';
+      priceEl.classList.add('empty');
+    } else {
+      priceEl.classList.remove('empty');
+      priceEl.textContent = money(task.lowest);
+      if (flash){
+        priceEl.classList.remove('flash');
+        void priceEl.offsetWidth;
+        priceEl.classList.add('flash');
+      }
+    }
+  }
+
+  function cardBodyHtml(task){
+    if (task.status === 'open'){
+      var feedRows = task.bids.slice().reverse().map(function(b){ return bidRowHtml(task, b); }).join('');
+      var emptyHtml = task.bids.length === 0
+        ? '<div class="bid-empty" id="empty-' + task.id + '"><i class="pulse"></i>Waiting for the first bid&hellip;</div>'
+        : '';
+      return (
+        '<div class="ticker-row">' +
+          '<div>' +
+            '<div class="ticker-label">Current low bid</div>' +
+            '<div class="ticker-price' + (task.lowest === null ? ' empty' : '') + '" id="price-' + task.id + '">' +
+              (task.lowest === null ? 'Waiting for bids…' : money(task.lowest)) +
+            '</div>' +
+          '</div>' +
+          '<div class="ticker-sub"><span id="count-' + task.id + '">' + task.bids.length + (task.bids.length === 1 ? ' bid' : ' bids') + '</span> so far</div>' +
+        '</div>' +
+        '<div class="bid-feed" id="feed-' + task.id + '">' + emptyHtml + feedRows + '</div>'
+      );
+    }
+
+    if (task.status === 'accepted'){
+      var b = task.acceptedBid;
+      var progressHtml =
+        '<div class="winner-box">' +
+          '<div class="winner-head"><span class="winner-name">' + esc(b.name) + '</span><span class="winner-amount">' + money(b.amount) + '</span></div>' +
+          '<div class="winner-sub">' + starString(b.rating) + ' ' + b.rating.toFixed(1) + ' &middot; work in progress</div>' +
+          '<div class="winner-actions">' +
+            '<button class="btn btn-good" data-complete="' + task.id + '">Mark Complete &amp; Review</button>' +
+          '</div>' +
+        '</div>';
+
+      var reviewHtml =
+        '<div class="winner-box">' +
+          '<div class="winner-head"><span class="winner-name">' + esc(b.name) + '</span><span class="winner-amount">' + money(b.amount) + '</span></div>' +
+          '<div class="winner-sub">Job marked complete. Rate the work before you pay.</div>' +
+        '</div>' +
+        '<div class="review-box">' +
+          '<p class="review-title">Your rating</p>' +
+          '<div class="star-picker" id="stars-' + task.id + '" data-task="' + task.id + '">' +
+            [1,2,3,4,5].map(function(n){
+              return '<span data-star="' + n + '" class="' + (n <= task.reviewRating ? 'on' : '') + '">&#9733;</span>';
+            }).join('') +
+          '</div>' +
+          '<button class="btn btn-good" data-pay="' + task.id + '"' + (task.reviewRating === 0 ? ' disabled style="opacity:.5;cursor:not-allowed;"' : '') + '>Submit Review &amp; Pay ' + money(b.amount) + '</button>' +
+        '</div>';
+
+      return task.flowStep === 'review' ? reviewHtml : progressHtml;
+    }
+
+    // completed
+    var wb = task.acceptedBid;
+    return (
+      '<div class="paid-box">' +
+        '<div class="paid-left">' +
+          '<b>' + esc(wb.name) + '</b>' +
+          '<span>' + starString(task.reviewRating) + ' your rating &middot; job closed</span>' +
+        '</div>' +
+        '<div class="paid-amount">Paid ' + money(wb.amount) + '</div>' +
+      '</div>'
+    );
+  }
+
+  function cardHtml(task){
+    var urgentClass = '';
+    var remaining = task.deadlineTs - Date.now();
+    if (remaining <= 0) urgentClass = ' expired';
+    else if (remaining < 60*60*1000) urgentClass = ' urgent';
+
+    return (
+      '<div class="card-head">' +
+        '<div class="card-titles">' +
+          '<p class="card-title">' + esc(task.title) + '</p>' +
+          '<p class="card-desc">' + esc(task.description) + '</p>' +
+        '</div>' +
+        statusPillHtml(task) +
+      '</div>' +
+      '<div class="card-meta">' +
+        '<span class="meta-item">Deadline <b>' + esc(fmtDeadlineLabel(task.deadlineTs, task.deadlineLabel)) + '</b></span>' +
+        '<span class="meta-item' + urgentClass + '">Time left <b class="countdown" id="cd-' + task.id + '" data-deadline="' + task.deadlineTs + '">' + fmtCountdown(remaining) + '</b></span>' +
+        '<span class="meta-item">Max budget <b>' + money(task.maxBudget) + '</b></span>' +
+      '</div>' +
+      '<div class="card-body" id="body-' + task.id + '">' + cardBodyHtml(task) + '</div>'
+    );
+  }
+
+  function renderTask(task){
+    var el = document.getElementById('card-' + task.id);
+    if (!el){
+      el = document.createElement('div');
+      el.className = 'card';
+      el.id = 'card-' + task.id;
+      document.getElementById('taskList').appendChild(el);
+    }
+    el.innerHTML = cardHtml(task);
+  }
+
+  function prependTask(task){
+    var el = document.createElement('div');
+    el.className = 'card';
+    el.id = 'card-' + task.id;
+    el.innerHTML = cardHtml(task);
+    var list = document.getElementById('taskList');
+    list.insertBefore(el, list.firstChild);
+  }
+
+  function renderAll(){
+    var list = document.getElementById('taskList');
+    list.innerHTML = '';
+    tasks.forEach(function(t){ renderTask(t); });
+  }
+
+  /* ---------------- interactions ---------------- */
+  document.getElementById('taskList').addEventListener('click', function(e){
+    var acceptEl = e.target.closest('[data-accept]');
+    if (acceptEl){
+      var taskId = acceptEl.getAttribute('data-task');
+      var bidId = acceptEl.getAttribute('data-accept');
+      var task = tasks.filter(function(t){ return t.id === taskId; })[0];
+      var bid = task.bids.filter(function(b){ return b.id === bidId; })[0];
+      if (!task || !bid) return;
+      clearTaskTimers(task.id);
+      task.status = 'accepted';
+      task.flowStep = 'progress';
+      task.acceptedBid = bid;
+      renderTask(task);
+      return;
+    }
+
+    var completeEl = e.target.closest('[data-complete]');
+    if (completeEl){
+      var t2 = tasks.filter(function(t){ return t.id === completeEl.getAttribute('data-complete'); })[0];
+      if (!t2) return;
+      t2.flowStep = 'review';
+      renderTask(t2);
+      return;
+    }
+
+    var starEl = e.target.closest('[data-star]');
+    if (starEl){
+      var starsWrap = e.target.closest('.star-picker');
+      var t3 = tasks.filter(function(t){ return t.id === starsWrap.getAttribute('data-task'); })[0];
+      if (!t3) return;
+      t3.reviewRating = parseInt(starEl.getAttribute('data-star'), 10);
+      renderTask(t3);
+      return;
+    }
+
+    var payEl = e.target.closest('[data-pay]');
+    if (payEl){
+      var t4 = tasks.filter(function(t){ return t.id === payEl.getAttribute('data-pay'); })[0];
+      if (!t4 || t4.reviewRating === 0) return;
+      t4.status = 'completed';
+      renderTask(t4);
+      return;
+    }
+  });
+
+  document.getElementById('postForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var title = document.getElementById('f-title').value.trim();
+    var desc = document.getElementById('f-desc').value.trim();
+    var deadlineVal = document.getElementById('f-deadline').value;
+    var budget = parseFloat(document.getElementById('f-budget').value);
+    if (!title || !desc || !deadlineVal || !budget || budget <= 0) return;
+
+    var deadlineTs = new Date(deadlineVal).getTime();
+    if (isNaN(deadlineTs)) deadlineTs = Date.now() + 24*60*60*1000;
+
+    var task = {
+      id: 'c' + Date.now(),
+      title: title,
+      description: desc,
+      deadlineTs: deadlineTs,
+      deadlineLabel: null,
+      maxBudget: budget,
+      status: 'open',
+      flowStep: 'progress',
+      bids: [],
+      lowest: null,
+      acceptedBid: null,
+      reviewRating: 0,
+      presetBids: null
+    };
+    tasks.unshift(task);
+    prependTask(task);
+    scheduleTaskBids(task);
+    e.target.reset();
+    setDefaultDeadline();
+    document.getElementById('card-' + task.id).scrollIntoView({behavior:'smooth', block:'center'});
+  });
+
+  function setDefaultDeadline(){
+    var dt = new Date(Date.now() + 24*60*60*1000);
+    dt.setMinutes(dt.getMinutes() - dt.getTimezoneOffset());
+    document.getElementById('f-deadline').value = dt.toISOString().slice(0,16);
+  }
+
+  /* ---------------- countdown ticker ---------------- */
+  setInterval(function(){
+    var els = document.querySelectorAll('.countdown');
+    for (var i=0;i<els.length;i++){
+      var el = els[i];
+      var deadline = parseInt(el.getAttribute('data-deadline'), 10);
+      var remaining = deadline - Date.now();
+      el.textContent = fmtCountdown(remaining);
+      var meta = el.closest('.meta-item');
+      if (meta){
+        meta.classList.toggle('urgent', remaining > 0 && remaining < 60*60*1000);
+        meta.classList.toggle('expired', remaining <= 0);
+      }
+    }
+  }, 1000);
+
+  /* ---------------- boot ---------------- */
+  renderAll();
+  tasks.forEach(scheduleTaskBids);
+  setDefaultDeadline();
+
+})();
+</script>
+</body>
+</html>

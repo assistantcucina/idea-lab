@@ -1,5 +1,35 @@
 [
   {
+    "slug": "reverse-auction",
+    "title": "Reverse Auction",
+    "description": "Post a task and a budget, then watch specialists bid the price down in real time until you accept the lowest offer.",
+    "date": "2026-09-18"
+  },
+  {
+    "slug": "debt-arena",
+    "title": "Debt Arena",
+    "description": "Auction off your debts and obligations to other players in real time — highest bidder takes your burden for cash and burden credits.",
+    "date": "2026-09-18"
+  },
+  {
+    "slug": "bet-archive",
+    "title": "Bet Archive",
+    "description": "Log predictions with stakes and odds, resolve them as they come true or don't, and watch your lifetime Brier score and calibration curve update.",
+    "date": "2026-09-18"
+  },
+  {
+    "slug": "test-prototype-card",
+    "title": "Streak Breaker",
+    "description": "Log three daily habits to fill the coin meter, then unlock a playable neon brick-breaker arcade game at 3/3.",
+    "date": "2026-09-18"
+  },
+  {
+    "slug": "depth-betting",
+    "title": "Depth Betting",
+    "description": "Wager real stakes for or against your friends' goals — win double if you bet on their success, keep your stake if you bet against it.",
+    "date": "2026-09-18"
+  },
+  {
     "slug": "habit-arcade",
     "title": "Habit Arcade",
     "description": "Gamify tiny daily habits — log one, watch XP and streaks climb, unlock a retro reflex mini-game when you clear all three for the day.",

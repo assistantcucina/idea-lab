@@ -1,0 +1,861 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Streak Breaker</title>
+<style>
+  :root {
+    --bg: #0a0118;
+    --bg-glow: #1c0a3e;
+    --screen: #120a24;
+    --panel: #1c0f38;
+    --panel-2: #241246;
+    --line: #3d2166;
+    --text: #f4ecff;
+    --muted: #9484bf;
+    --purple: #b26bff;
+    --green: #2bffa0;
+    --amber: #ffb300;
+    --red: #ff4d5e;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; }
+  body {
+    background:
+      radial-gradient(ellipse 600px 300px at 50% -10%, rgba(178,107,255,0.25), transparent 60%),
+      repeating-linear-gradient(90deg, rgba(178,107,255,0.05) 0px, rgba(178,107,255,0.05) 1px, transparent 1px, transparent 26px),
+      repeating-linear-gradient(0deg, rgba(178,107,255,0.05) 0px, rgba(178,107,255,0.05) 1px, transparent 1px, transparent 26px),
+      var(--bg);
+    color: var(--text);
+    font-family: "Consolas", "Menlo", "Monaco", monospace;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 22px 14px calc(84px + env(safe-area-inset-bottom));
+  }
+
+  .marquee {
+    font-family: "Arial Black", "Arial Bold", Impact, sans-serif;
+  }
+
+  /* ---------- phone shell ---------- */
+  .phone-shell {
+    position: relative;
+    width: 100%;
+    max-width: 380px;
+    background: linear-gradient(160deg, #26123f, #0c0620);
+    border-radius: 44px;
+    padding: 16px 11px 14px;
+    box-shadow:
+      0 0 0 2px #000,
+      0 30px 70px rgba(178,107,255,0.18),
+      inset 0 0 0 1px rgba(255,255,255,0.04);
+  }
+  .phone-notch {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 108px;
+    height: 20px;
+    background: #04010a;
+    border-radius: 12px;
+    z-index: 3;
+  }
+  .phone-screen {
+    position: relative;
+    background: var(--screen);
+    border-radius: 30px;
+    height: min(680px, 74vh);
+    min-height: 460px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 30px 13px 18px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--purple) transparent;
+  }
+  .phone-screen::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.14) 0px, rgba(0,0,0,0.14) 1px, transparent 1px, transparent 3px);
+    border-radius: 30px;
+    z-index: 5;
+  }
+  .home-indicator {
+    width: 116px;
+    height: 5px;
+    background: rgba(255,255,255,0.28);
+    border-radius: 3px;
+    margin: 10px auto 0;
+  }
+
+  /* ---------- status bar ---------- */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+    margin-bottom: 14px;
+  }
+  .status-right { display: flex; align-items: center; gap: 5px; }
+  .sig-bars { display: flex; align-items: flex-end; gap: 2px; height: 8px; }
+  .sig-bars span { width: 3px; background: var(--muted); border-radius: 1px; }
+  .sig-bars span:nth-child(1) { height: 3px; }
+  .sig-bars span:nth-child(2) { height: 5px; }
+  .sig-bars span:nth-child(3) { height: 7px; }
+  .sig-bars span:nth-child(4) { height: 8px; }
+  .batt {
+    width: 18px; height: 9px;
+    border: 1px solid var(--muted);
+    border-radius: 2px;
+    position: relative;
+    padding: 1px;
+  }
+  .batt::after {
+    content: "";
+    position: absolute;
+    right: -3px; top: 2.5px;
+    width: 2px; height: 4px;
+    background: var(--muted);
+    border-radius: 0 1px 1px 0;
+  }
+  .batt i { display: block; height: 100%; width: 82%; background: var(--green); border-radius: 1px; }
+
+  /* ---------- header ---------- */
+  .app-title {
+    text-align: center;
+    font-size: 24px;
+    letter-spacing: 2px;
+    margin: 2px 0 4px;
+    text-transform: uppercase;
+    color: var(--purple);
+    text-shadow: 0 0 6px rgba(178,107,255,0.8), 0 0 18px rgba(178,107,255,0.4), 2px 2px 0 #05010c;
+  }
+  .app-sub {
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.6px;
+    margin: 0 0 18px;
+  }
+  .app-sub b { color: var(--green); }
+
+  /* ---------- coin meter ---------- */
+  .coin-meter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: var(--panel);
+    border: 2px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 10px;
+    margin-bottom: 16px;
+  }
+  .coin {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: #0c0620;
+    border: 2px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    color: var(--line);
+    transition: all 0.25s ease;
+  }
+  .coin.lit {
+    border-color: var(--amber);
+    color: var(--amber);
+    background: rgba(255,179,0,0.12);
+    box-shadow: 0 0 10px rgba(255,179,0,0.6);
+    transform: scale(1.08);
+  }
+  .coin-label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+    text-align: center;
+    border-left: 1px dashed var(--line);
+    padding-left: 14px;
+  }
+  .coin-label b { display: block; font-size: 15px; color: var(--text); margin-top: 2px; }
+
+  /* ---------- habit rows ---------- */
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    margin: 0 0 8px 2px;
+    text-transform: uppercase;
+  }
+  .habit {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    background: var(--panel);
+    border: 2px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 11px;
+    margin-bottom: 9px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .habit.done {
+    border-color: var(--green);
+    box-shadow: 0 0 12px rgba(43,255,160,0.18) inset;
+  }
+  .habit-icon {
+    flex-shrink: 0;
+    width: 38px; height: 38px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    background: #0c0620;
+    border: 2px solid var(--line);
+  }
+  .habit[data-c="0"] .habit-icon { border-color: var(--purple); }
+  .habit[data-c="1"] .habit-icon { border-color: var(--green); }
+  .habit[data-c="2"] .habit-icon { border-color: var(--amber); }
+  .habit-info { flex: 1; min-width: 0; }
+  .habit-name {
+    font-size: 12.5px;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+  .habit-streak { font-size: 10.5px; color: var(--muted); }
+  .habit-streak b { color: var(--amber); }
+  .log-btn {
+    flex-shrink: 0;
+    background: #0c0620;
+    color: var(--green);
+    border: 2px solid var(--green);
+    border-radius: 7px;
+    padding: 9px 11px;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .log-btn:active { transform: translateY(1px); }
+  .log-btn:disabled {
+    color: var(--muted);
+    border-color: var(--line);
+    cursor: default;
+  }
+
+  /* ---------- rank panel ---------- */
+  .rank-panel {
+    background: var(--panel);
+    border: 2px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 14px 0 16px;
+    text-align: center;
+  }
+  .rank-title {
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: var(--purple);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .rank-dots { display: flex; justify-content: center; gap: 8px; margin-bottom: 6px; }
+  .rank-dot {
+    width: 11px; height: 11px;
+    border-radius: 2px;
+    background: #0c0620;
+    border: 2px solid var(--line);
+    transform: rotate(45deg);
+  }
+  .rank-dot.filled {
+    background: var(--purple);
+    border-color: var(--purple);
+    box-shadow: 0 0 8px rgba(178,107,255,0.7);
+  }
+  .rank-hint { font-size: 10px; color: var(--muted); }
+
+  /* ---------- arcade ---------- */
+  .arcade {
+    background: var(--panel);
+    border: 2px dashed var(--line);
+    border-radius: 12px;
+    padding: 16px 13px;
+    text-align: center;
+  }
+  .arcade.unlocked {
+    border-style: solid;
+    border-color: var(--green);
+    box-shadow: 0 0 18px rgba(43,255,160,0.2);
+  }
+  .arcade-title {
+    font-size: 12.5px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .arcade.locked .arcade-title { color: var(--muted); }
+  .arcade.unlocked .arcade-title { color: var(--green); }
+  .arcade-desc { font-size: 10.5px; color: var(--muted); margin-bottom: 4px; line-height: 1.5; }
+  .lock-glyph { font-size: 26px; margin: 6px 0 10px; opacity: 0.6; }
+
+  .game-hud {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10.5px;
+    color: var(--muted);
+    margin-bottom: 8px;
+    padding: 0 2px;
+  }
+  .game-hud b { color: var(--amber); }
+  .game-hud .lives { color: var(--red); letter-spacing: 2px; }
+
+  .game-wrap {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    background: #06030f;
+    margin-bottom: 12px;
+    line-height: 0;
+  }
+  canvas#gameCanvas { display: block; width: 100%; height: auto; touch-action: none; }
+
+  .game-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(6,3,15,0.86);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    text-align: center;
+  }
+  .game-overlay .msg { font-size: 15px; letter-spacing: 1px; text-transform: uppercase; }
+  .game-overlay .msg.win { color: var(--green); text-shadow: 0 0 10px rgba(43,255,160,0.7); }
+  .game-overlay .msg.lose { color: var(--red); text-shadow: 0 0 10px rgba(255,77,94,0.7); }
+  .game-overlay .score-line { font-size: 11px; color: var(--muted); }
+  .game-overlay .score-line b { color: var(--amber); }
+
+  .arcade-btn {
+    background: var(--amber);
+    color: #1a0f00;
+    border: none;
+    border-radius: 8px;
+    padding: 11px 22px;
+    font-family: inherit;
+    font-weight: bold;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .arcade-btn:active { transform: translateY(1px); }
+  .arcade-btn.ghost {
+    background: transparent;
+    color: var(--purple);
+    border: 2px solid var(--purple);
+    padding: 9px 20px;
+  }
+  .drag-hint { font-size: 9.5px; color: var(--muted); letter-spacing: 0.5px; margin-top: 2px; }
+
+  .site-footer {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 10;
+    padding: 10px 20px calc(10px + env(safe-area-inset-bottom));
+    background: var(--panel);
+    border-top: 1px solid var(--line);
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .site-footer a { color: var(--muted); text-decoration: underline; }
+  .site-footer a:hover { color: var(--green); }
+
+  @media (max-width: 360px) {
+    .phone-shell { border-radius: 34px; padding: 13px 8px 11px; }
+    .phone-screen { border-radius: 22px; padding: 26px 10px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="phone-shell">
+  <div class="phone-notch"></div>
+  <div class="phone-screen" id="phoneScreen">
+
+    <div class="status-bar">
+      <span id="clock">9:41</span>
+      <span class="status-right">
+        <span class="sig-bars"><span></span><span></span><span></span><span></span></span>
+        <span class="batt"><i></i></span>
+      </span>
+    </div>
+
+    <h1 class="app-title marquee">Streak Breaker</h1>
+    <p class="app-sub">log a habit &#9656; fill the coin meter &#9656; <b>smash the brick wall</b></p>
+
+    <div class="coin-meter">
+      <div class="coin" id="coin0">&#9679;</div>
+      <div class="coin" id="coin1">&#9679;</div>
+      <div class="coin" id="coin2">&#9679;</div>
+      <div class="coin-label">TODAY<b id="coinCount">0/3</b></div>
+    </div>
+
+    <div class="section-label">Daily Habits</div>
+    <div id="habits"></div>
+
+    <div class="rank-panel">
+      <div class="rank-title" id="rankTitle">ROOKIE</div>
+      <div class="rank-dots" id="rankDots"></div>
+      <div class="rank-hint" id="rankHint"></div>
+    </div>
+
+    <div class="section-label">Arcade Cabinet</div>
+    <div class="arcade locked" id="arcade">
+      <div class="arcade-title" id="arcadeTitle">ARCADE LOCKED</div>
+
+      <div id="lockedView">
+        <div class="lock-glyph">&#128274;</div>
+        <div class="arcade-desc">Clear <b style="color:var(--amber)">3/3</b> habits today to insert a coin and unlock <b style="color:var(--text)">BRICK SMASH</b>.</div>
+      </div>
+
+      <div id="gameArea" hidden>
+        <div class="game-hud">
+          <span>SCORE <b id="score">0</b></span>
+          <span>BEST <b id="best">0</b></span>
+          <span class="lives" id="lives">&#9679;&#9679;&#9679;</span>
+        </div>
+        <div class="game-wrap">
+          <canvas id="gameCanvas" width="600" height="720"></canvas>
+          <div class="game-overlay" id="overlay">
+            <div class="msg" id="overlayMsg">GET READY</div>
+            <div class="score-line" id="overlaySub">drag to move the paddle</div>
+            <button class="arcade-btn" id="startBtn">INSERT COIN</button>
+          </div>
+        </div>
+        <div class="drag-hint">drag left / right on the screen to steer the paddle</div>
+      </div>
+    </div>
+
+  </div>
+  <div class="home-indicator"></div>
+</div>
+
+<footer class="site-footer">built by <a href="https://adrianbudny.com" target="_blank" rel="noreferrer">ab</a></footer>
+
+<script>
+(function () {
+  "use strict";
+
+  var KEY = "streak-breaker-state-v1";
+  var today = new Date().toISOString().slice(0, 10);
+  var yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+
+  var defaultHabits = [
+    { id: "water", name: "Drink Water", icon: "💧", streak: 0, lastDone: null },
+    { id: "pushups", name: "5 Pushups", icon: "💪", streak: 0, lastDone: null },
+    { id: "read", name: "Read a Page", icon: "📖", streak: 0, lastDone: null }
+  ];
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (!raw) return { habits: defaultHabits, best: 0 };
+      var parsed = JSON.parse(raw);
+      return {
+        habits: Array.isArray(parsed.habits) && parsed.habits.length === 3 ? parsed.habits : defaultHabits,
+        best: parsed.best || 0
+      };
+    } catch (e) {
+      return { habits: defaultHabits, best: 0 };
+    }
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  var state = load();
+  var wasAllDone = state.habits.every(function (h) { return h.lastDone === today; });
+
+  var RANKS = [
+    { min: 0, label: "ROOKIE", next: 3 },
+    { min: 3, label: "GRINDER", next: 7 },
+    { min: 7, label: "CHAMPION", next: 15 },
+    { min: 15, label: "LEGEND", next: null }
+  ];
+
+  function totalStreak() {
+    return state.habits.reduce(function (sum, h) { return sum + h.streak; }, 0);
+  }
+  function currentRankIndex() {
+    var total = totalStreak();
+    var idx = 0;
+    for (var i = 0; i < RANKS.length; i++) {
+      if (total >= RANKS[i].min) idx = i;
+    }
+    return idx;
+  }
+
+  function render() {
+    var doneToday = state.habits.filter(function (h) { return h.lastDone === today; }).length;
+
+    for (var i = 0; i < 3; i++) {
+      var c = document.getElementById("coin" + i);
+      c.classList.toggle("lit", i < doneToday);
+    }
+    document.getElementById("coinCount").textContent = doneToday + "/3";
+
+    var habitsEl = document.getElementById("habits");
+    habitsEl.innerHTML = "";
+    state.habits.forEach(function (h, idx) {
+      var done = h.lastDone === today;
+      var row = document.createElement("div");
+      row.className = "habit" + (done ? " done" : "");
+      row.setAttribute("data-c", idx);
+      row.innerHTML =
+        '<div class="habit-icon">' + h.icon + "</div>" +
+        '<div class="habit-info">' +
+          '<div class="habit-name">' + h.name + "</div>" +
+          '<div class="habit-streak">streak <b>' + h.streak + "</b> day" + (h.streak === 1 ? "" : "s") + "</div>" +
+        "</div>" +
+        '<button class="log-btn" data-id="' + h.id + '"' + (done ? " disabled" : "") + ">" +
+        (done ? "✓ Done" : "Log It") +
+        "</button>";
+      habitsEl.appendChild(row);
+    });
+    habitsEl.querySelectorAll(".log-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () { logHabit(btn.getAttribute("data-id")); });
+    });
+
+    var rIdx = currentRankIndex();
+    var rank = RANKS[rIdx];
+    document.getElementById("rankTitle").textContent = rank.label;
+    var dotsEl = document.getElementById("rankDots");
+    dotsEl.innerHTML = "";
+    for (var d = 0; d < RANKS.length; d++) {
+      var dot = document.createElement("div");
+      dot.className = "rank-dot" + (d <= rIdx ? " filled" : "");
+      dotsEl.appendChild(dot);
+    }
+    var total = totalStreak();
+    document.getElementById("rankHint").textContent = rank.next
+      ? (rank.next - total > 0 ? (rank.next - total) + " more combined streak day" + ((rank.next - total) === 1 ? "" : "s") + " to " + RANKS[rIdx + 1].label : "rank up ready")
+      : "max rank reached";
+
+    var allDone = state.habits.every(function (h) { return h.lastDone === today; });
+    var arcade = document.getElementById("arcade");
+    var arcadeTitle = document.getElementById("arcadeTitle");
+    var lockedView = document.getElementById("lockedView");
+    var gameArea = document.getElementById("gameArea");
+    if (allDone) {
+      arcade.classList.remove("locked");
+      arcade.classList.add("unlocked");
+      arcadeTitle.textContent = "🕹 ARCADE UNLOCKED";
+      lockedView.hidden = true;
+      gameArea.hidden = false;
+      ensureGameBooted();
+    } else {
+      arcade.classList.add("locked");
+      arcade.classList.remove("unlocked");
+      arcadeTitle.textContent = "ARCADE LOCKED";
+      lockedView.hidden = false;
+      gameArea.hidden = true;
+    }
+    document.getElementById("best").textContent = state.best;
+  }
+
+  function logHabit(id) {
+    var h = state.habits.filter(function (x) { return x.id === id; })[0];
+    if (!h || h.lastDone === today) return;
+    h.streak = (h.lastDone === yesterday) ? h.streak + 1 : 1;
+    h.lastDone = today;
+    save();
+    render();
+
+    var allDoneNow = state.habits.every(function (x) { return x.lastDone === today; });
+    if (allDoneNow && !wasAllDone) {
+      wasAllDone = true;
+      setTimeout(function () {
+        var arcadeEl = document.getElementById("arcade");
+        arcadeEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        arcadeEl.animate(
+          [{ boxShadow: "0 0 34px rgba(43,255,160,0.75)" }, { boxShadow: "0 0 18px rgba(43,255,160,0.2)" }],
+          { duration: 900, easing: "ease-out" }
+        );
+      }, 150);
+    }
+  }
+
+  // ================= Brick Smash mini-game =================
+  var LW = 300, LH = 360; // logical coordinate space
+  var canvas = document.getElementById("gameCanvas");
+  var ctx = null;
+  var booted = false;
+  var rafId = null;
+  var lastT = 0;
+
+  var ROWS = 4, COLS = 6, BRICK_GAP = 4, BRICK_TOP = 26;
+  var ROW_COLORS = ["#ff4d5e", "#ffb300", "#2bffa0", "#b26bff"];
+  var ROW_POINTS = [40, 30, 20, 10];
+
+  var paddle = { w: 56, h: 9, x: (LW - 56) / 2, y: LH - 22 };
+  var ball = { x: LW / 2, y: LH - 40, r: 5.5, vx: 0, vy: 0 };
+  var bricks = [];
+  var lives = 3;
+  var score = 0;
+  var running = false;
+  var over = false;
+  var won = false;
+  var speedMul = 1;
+
+  function setupCanvasResolution() {
+    var dpr = window.devicePixelRatio || 1;
+    canvas.width = LW * dpr;
+    canvas.height = LH * dpr;
+    ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function buildBricks() {
+    bricks = [];
+    var bw = (LW - (COLS + 1) * BRICK_GAP) / COLS;
+    var bh = 16;
+    for (var r = 0; r < ROWS; r++) {
+      for (var c = 0; c < COLS; c++) {
+        bricks.push({
+          x: BRICK_GAP + c * (bw + BRICK_GAP),
+          y: BRICK_TOP + r * (bh + BRICK_GAP),
+          w: bw, h: bh,
+          alive: true,
+          color: ROW_COLORS[r % ROW_COLORS.length],
+          pts: ROW_POINTS[r % ROW_POINTS.length]
+        });
+      }
+    }
+  }
+
+  function resetBall(serveUp) {
+    ball.x = paddle.x + paddle.w / 2;
+    ball.y = paddle.y - ball.r - 1;
+    var angle = (Math.random() * 0.7 - 0.35);
+    var speed = 150 * speedMul;
+    ball.vx = speed * Math.sin(angle);
+    ball.vy = -speed * Math.cos(angle);
+    if (serveUp === false) { ball.vx = 0; ball.vy = 0; }
+  }
+
+  function livesGlyph() {
+    var s = "";
+    for (var i = 0; i < 3; i++) s += (i < lives ? "●" : "○");
+    return s;
+  }
+
+  function newGame() {
+    buildBricks();
+    paddle.x = (LW - paddle.w) / 2;
+    lives = 3;
+    score = 0;
+    over = false;
+    won = false;
+    speedMul = 1;
+    resetBall(true);
+    updateHud();
+  }
+
+  function updateHud() {
+    document.getElementById("score").textContent = score;
+    document.getElementById("lives").textContent = livesGlyph();
+    document.getElementById("best").textContent = state.best;
+  }
+
+  function showOverlay(msgText, subText, cls, btnText) {
+    var ov = document.getElementById("overlay");
+    var msg = document.getElementById("overlayMsg");
+    var sub = document.getElementById("overlaySub");
+    var btn = document.getElementById("startBtn");
+    msg.textContent = msgText;
+    msg.className = "msg" + (cls ? " " + cls : "");
+    sub.innerHTML = subText;
+    btn.textContent = btnText;
+    ov.style.display = "flex";
+  }
+  function hideOverlay() {
+    document.getElementById("overlay").style.display = "none";
+  }
+
+  function endGame(isWin) {
+    running = false;
+    over = true;
+    won = isWin;
+    cancelAnimationFrame(rafId);
+    if (score > state.best) state.best = score;
+    save();
+    updateHud();
+    if (isWin) {
+      showOverlay("Wall Smashed!", "score <b>" + score + "</b> &middot; best <b>" + state.best + "</b>", "win", "Play Again");
+    } else {
+      showOverlay("Game Over", "score <b>" + score + "</b> &middot; best <b>" + state.best + "</b>", "lose", "Play Again");
+    }
+  }
+
+  function step(t) {
+    if (!running) return;
+    if (!lastT) lastT = t;
+    var dt = Math.min(0.035, (t - lastT) / 1000);
+    lastT = t;
+
+    ball.x += ball.vx * dt;
+    ball.y += ball.vy * dt;
+
+    if (ball.x - ball.r < 0) { ball.x = ball.r; ball.vx *= -1; }
+    if (ball.x + ball.r > LW) { ball.x = LW - ball.r; ball.vx *= -1; }
+    if (ball.y - ball.r < 0) { ball.y = ball.r; ball.vy *= -1; }
+
+    if (ball.vy > 0 &&
+        ball.y + ball.r >= paddle.y &&
+        ball.y + ball.r <= paddle.y + paddle.h + 10 &&
+        ball.x >= paddle.x - 4 && ball.x <= paddle.x + paddle.w + 4) {
+      ball.y = paddle.y - ball.r;
+      var rel = (ball.x - (paddle.x + paddle.w / 2)) / (paddle.w / 2);
+      var speed = Math.min(320, 150 * speedMul + 10);
+      ball.vx = rel * speed * 0.9;
+      ball.vy = -Math.sqrt(Math.max(1, speed * speed - ball.vx * ball.vx));
+    }
+
+    var prevY = ball.y - ball.vy * dt;
+    for (var i = 0; i < bricks.length; i++) {
+      var b = bricks[i];
+      if (!b.alive) continue;
+      if (ball.x + ball.r > b.x && ball.x - ball.r < b.x + b.w &&
+          ball.y + ball.r > b.y && ball.y - ball.r < b.y + b.h) {
+        b.alive = false;
+        score += b.pts;
+        var fromTop = prevY + ball.r <= b.y;
+        var fromBottom = prevY - ball.r >= b.y + b.h;
+        if (fromTop || fromBottom) ball.vy *= -1; else ball.vx *= -1;
+        var alive = bricks.filter(function (x) { return x.alive; }).length;
+        speedMul = 1 + (bricks.length - alive) / bricks.length * 0.55;
+        updateHud();
+        if (alive === 0) { score += 100; endGame(true); return; }
+        break;
+      }
+    }
+
+    if (ball.y - ball.r > LH) {
+      lives -= 1;
+      updateHud();
+      if (lives <= 0) { endGame(false); return; }
+      resetBall(true);
+    }
+
+    draw();
+    rafId = requestAnimationFrame(step);
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, LW, LH);
+    ctx.fillStyle = "#06030f";
+    ctx.fillRect(0, 0, LW, LH);
+
+    bricks.forEach(function (b) {
+      if (!b.alive) return;
+      ctx.save();
+      ctx.shadowColor = b.color;
+      ctx.shadowBlur = 6;
+      ctx.fillStyle = b.color;
+      ctx.fillRect(b.x, b.y, b.w, b.h);
+      ctx.restore();
+    });
+
+    ctx.save();
+    ctx.shadowColor = "#2bffa0";
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = "#2bffa0";
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(paddle.x, paddle.y, paddle.w, paddle.h, 4) : ctx.rect(paddle.x, paddle.y, paddle.w, paddle.h);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.shadowColor = "#ffb300";
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = "#ffb300";
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function startRun() {
+    hideOverlay();
+    newGame();
+    running = true;
+    lastT = 0;
+    cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(step);
+  }
+
+  function pointerToLogicalX(clientX) {
+    var rect = canvas.getBoundingClientRect();
+    var scale = LW / rect.width;
+    return (clientX - rect.left) * scale;
+  }
+  function movePaddleTo(clientX) {
+    var lx = pointerToLogicalX(clientX);
+    paddle.x = Math.max(0, Math.min(LW - paddle.w, lx - paddle.w / 2));
+    if (!running) draw();
+  }
+
+  function ensureGameBooted() {
+    if (booted) return;
+    booted = true;
+    setupCanvasResolution();
+    buildBricks();
+    draw();
+    showOverlay("Get Ready", "drag to move the paddle", "", "Insert Coin");
+
+    canvas.addEventListener("pointerdown", function (e) {
+      canvas.setPointerCapture(e.pointerId);
+      movePaddleTo(e.clientX);
+    });
+    canvas.addEventListener("pointermove", function (e) {
+      if (e.buttons === 0 && e.pointerType === "mouse") return;
+      movePaddleTo(e.clientX);
+    });
+
+    document.getElementById("startBtn").addEventListener("click", startRun);
+
+    window.addEventListener("resize", function () {
+      setupCanvasResolution();
+      draw();
+    });
+  }
+
+  function tickClock() {
+    var now = new Date();
+    var h = now.getHours() % 12; if (h === 0) h = 12;
+    var m = now.getMinutes();
+    document.getElementById("clock").textContent = h + ":" + (m < 10 ? "0" : "") + m;
+  }
+  tickClock();
+  setInterval(tickClock, 30000);
+
+  render();
+})();
+</script>
+</body>
+</html>
