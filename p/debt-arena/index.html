@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Debt Arena</title>
+<meta name="description" content="Auction off your obligations to the highest bidder before the hammer falls.">
+<style>
+  :root{
+    --bg: #0e0b09;
+    --bg-2: #171210;
+    --panel: #1c1613;
+    --panel-2: #221a16;
+    --border: #3a2c22;
+    --border-soft: #2a2019;
+    --ink: #ecdfc9;
+    --ink-dim: #a9998a;
+    --ink-faint: #6f6155;
+    --blood: #d4342c;
+    --blood-bright: #ff4b3e;
+    --gold: #d4a843;
+    --gold-bright: #f0c96a;
+    --green: #6f9c6a;
+    --shadow: 0 10px 30px rgba(0,0,0,0.5);
+
+    --font-display: 'Arial Black', 'Franklin Gothic Heavy', 'Helvetica Neue', Arial, sans-serif;
+    --font-body: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
+    --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', 'Courier New', monospace;
+  }
+
+  *{ box-sizing: border-box; }
+  html, body{ margin:0; padding:0; }
+  body{
+    background:
+      radial-gradient(ellipse at top, rgba(212,52,44,0.08), transparent 55%),
+      repeating-linear-gradient(180deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 3px),
+      var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    padding-bottom: 84px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a{ color: inherit; }
+
+  ::selection{ background: var(--blood); color: #fff; }
+
+  /* ---------- Topbar ---------- */
+  .topbar{
+    display:flex;
+    flex-wrap: wrap;
+    align-items:center;
+    justify-content:space-between;
+    gap: 16px;
+    padding: 22px 24px 18px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(0,0,0,0.25), transparent);
+  }
+  .brand{ display:flex; align-items:baseline; gap: 12px; flex-wrap: wrap; }
+  .brand-mark{
+    display:inline-flex; align-items:center; justify-content:center;
+    width: 34px; height:34px; border-radius:50%;
+    background: var(--blood); color:#fff; font-family: var(--font-mono);
+    font-size: 16px; font-weight:700; flex:none;
+    box-shadow: 0 0 0 3px rgba(212,52,44,0.18);
+  }
+  .brand h1{
+    font-family: var(--font-display);
+    font-size: 28px;
+    letter-spacing: 1.5px;
+    margin: 0;
+    color: var(--gold-bright);
+    text-shadow: 0 2px 0 rgba(0,0,0,0.6);
+  }
+  .tagline{
+    margin: 0; font-size: 12.5px; color: var(--ink-dim);
+    font-style: italic; letter-spacing: 0.2px;
+  }
+  .stats-strip{ display:flex; gap: 10px; flex-wrap: wrap; }
+  .stat{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    text-align:center;
+    min-width: 96px;
+  }
+  .stat-label{
+    display:block; font-size: 9.5px; text-transform: uppercase;
+    letter-spacing: 1.2px; color: var(--ink-faint); margin-bottom:3px;
+  }
+  .stat-value{
+    display:block; font-family: var(--font-mono); font-size: 16px;
+    font-weight:700; color: var(--gold-bright);
+  }
+  #statCash{ color: var(--green); }
+
+  /* ---------- Layout ---------- */
+  .layout{
+    display:grid;
+    grid-template-columns: 270px minmax(0,1fr) 270px;
+    grid-template-areas:
+      "list auction board"
+      "chronicle chronicle chronicle";
+    gap: 18px;
+    padding: 20px 24px 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .panel{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 18px 20px;
+    box-shadow: var(--shadow);
+  }
+  .panel-list{ grid-area: list; }
+  .panel-auction{ grid-area: auction; }
+  .panel-leaderboard{ grid-area: board; }
+  .panel-chronicle{ grid-area: chronicle; }
+
+  .panel h2{
+    font-family: var(--font-display);
+    font-size: 15px;
+    letter-spacing: 1.2px;
+    margin: 0 0 4px;
+    color: var(--ink);
+    text-transform: uppercase;
+  }
+  .panel-sub{
+    margin: 0 0 14px; font-size: 12px; color: var(--ink-faint); font-style: italic;
+  }
+
+  /* ---------- Debt picker ---------- */
+  .debt-picker{ display:flex; flex-direction:column; gap:8px; margin-bottom: 14px; }
+  .debt-card{
+    text-align:left;
+    background: var(--panel-2);
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    padding: 10px 12px;
+    cursor:pointer;
+    color: var(--ink);
+    font-family: var(--font-body);
+    transition: border-color .15s, transform .1s, background .15s;
+  }
+  .debt-card:hover{ border-color: var(--gold); background:#271e18; }
+  .debt-card:active{ transform: scale(0.98); }
+  .debt-card.selected{ border-color: var(--blood-bright); box-shadow: 0 0 0 1px var(--blood-bright) inset; }
+  .debt-card.disabled{ opacity:0.4; cursor:not-allowed; pointer-events:none; }
+  .debt-card-title{ font-weight:700; font-size: 13.5px; }
+  .debt-card-note{ font-size: 11px; color: var(--ink-faint); margin-top:2px; }
+  .debt-card-face{
+    font-family: var(--font-mono); font-size: 10.5px; color: var(--gold);
+    margin-top: 5px;
+  }
+
+  .custom-debt{ display:flex; gap:6px; margin-bottom: 14px; }
+  .custom-debt input{
+    flex:1; min-width:0; background: var(--bg-2); border:1px solid var(--border-soft);
+    border-radius: 6px; color: var(--ink); padding: 8px 10px; font-family: var(--font-body);
+    font-size: 12.5px;
+  }
+  .custom-debt input:focus{ outline: 1px solid var(--gold); }
+  .custom-debt button, .reserve-row button{
+    background: var(--panel-2); border:1px solid var(--border-soft); color: var(--ink);
+    border-radius:6px; padding: 8px 12px; font-family: var(--font-display); font-size: 11px;
+    letter-spacing: 0.6px; cursor:pointer;
+  }
+  .custom-debt button:hover{ border-color: var(--gold); }
+
+  .reserve-row{
+    background: var(--bg-2); border: 1px dashed var(--border); border-radius: 8px;
+    padding: 12px; display:flex; flex-direction:column; gap:8px;
+  }
+  .reserve-row label{ font-size: 10.5px; text-transform: uppercase; letter-spacing: 1px; color: var(--ink-faint); }
+  .reserve-row input{
+    background: var(--bg); border:1px solid var(--border-soft); border-radius:6px;
+    color: var(--gold-bright); font-family: var(--font-mono); font-size: 15px;
+    padding: 7px 10px; width: 100%;
+  }
+  #listBtn{
+    background: var(--blood); border-color: var(--blood); color:#fff; font-size:13px;
+    padding: 11px 12px; letter-spacing: 1px;
+  }
+  #listBtn:hover{ background: var(--blood-bright); }
+  #listBtn:disabled{ opacity:0.5; cursor:not-allowed; }
+
+  /* ---------- Auction panel ---------- */
+  .auction-empty{
+    padding: 46px 10px; text-align:center; color: var(--ink-faint);
+    font-style: italic; font-size: 13.5px; border: 1px dashed var(--border);
+    border-radius: 10px;
+  }
+  .lot-title{
+    font-family: var(--font-display); font-size: 20px; letter-spacing:0.5px;
+    color: var(--ink);
+  }
+  .lot-meta{ font-size: 12px; color: var(--ink-faint); margin-top: 4px; margin-bottom: 14px; }
+
+  .countdown{
+    font-family: var(--font-mono); font-weight:700;
+    font-size: 54px; text-align:center; color: var(--gold-bright);
+    letter-spacing: 2px;
+    text-shadow: 0 0 18px rgba(212,168,67,0.25);
+    margin: 6px 0 2px;
+  }
+  .countdown.urgent{ color: var(--blood-bright); animation: pulse .5s infinite; text-shadow: 0 0 22px rgba(255,75,62,0.45); }
+  @keyframes pulse{ 0%,100%{ transform: scale(1);} 50%{ transform: scale(1.06);} }
+
+  .chant{
+    text-align:center; font-family: var(--font-display); font-size: 12px;
+    letter-spacing: 2px; color: var(--blood-bright); min-height: 16px;
+    margin-bottom: 8px; text-transform: uppercase;
+  }
+
+  .current-bid{
+    display:flex; align-items:baseline; justify-content:center; gap:10px;
+    flex-wrap:wrap; margin: 10px 0 16px; padding: 12px;
+    background: var(--bg-2); border:1px solid var(--border-soft); border-radius:10px;
+  }
+  .cb-label{ font-size: 10px; letter-spacing:1px; text-transform:uppercase; color: var(--ink-faint); }
+  .cb-value{
+    font-family: var(--font-mono); font-size: 26px; font-weight:700; color: var(--green);
+    transition: transform .15s;
+  }
+  .cb-value.flash{ transform: scale(1.15); color: var(--gold-bright); }
+  .cb-bidder{ font-size: 12.5px; color: var(--ink-dim); width:100%; text-align:center; }
+  .cb-bidder .avatar{ margin-right:6px; }
+
+  .avatar{
+    display:inline-flex; align-items:center; justify-content:center;
+    width: 18px; height:18px; border-radius:50%; font-size: 9px; font-weight:700;
+    color:#1a1310; vertical-align: -3px;
+  }
+
+  .bid-feed{
+    max-height: 200px; overflow-y:auto; display:flex; flex-direction:column-reverse;
+    gap: 6px; padding-right: 4px;
+  }
+  .bid-feed::-webkit-scrollbar{ width:6px; }
+  .bid-feed::-webkit-scrollbar-thumb{ background: var(--border); border-radius:3px; }
+  .bid-row{
+    display:flex; align-items:center; gap:8px; font-size: 12.5px;
+    background: var(--bg-2); border:1px solid var(--border-soft); border-radius:6px;
+    padding: 6px 9px; animation: slidein .2s ease-out;
+  }
+  @keyframes slidein{ from{ opacity:0; transform: translateY(-6px);} to{ opacity:1; transform:translateY(0);} }
+  .bid-row .amt{ margin-left:auto; font-family: var(--font-mono); color: var(--gold); font-weight:700; }
+  .bid-row .flavor{ color: var(--ink-faint); font-style: italic; font-size: 11px; }
+
+  .auction-result{ text-align:center; padding: 10px 4px 4px; }
+  .auction-result .headline{
+    font-family: var(--font-display); font-size: 19px; letter-spacing: 0.5px; margin-bottom:6px;
+  }
+  .auction-result.sold .headline{ color: var(--gold-bright); }
+  .auction-result.nosale .headline{ color: var(--ink-dim); }
+  .auction-result .sub{ font-size: 12.5px; color: var(--ink-dim); margin-bottom: 16px; font-style: italic; }
+  #resetBtn{
+    background: var(--panel-2); border:1px solid var(--gold); color: var(--gold-bright);
+    border-radius:8px; padding: 10px 18px; font-family: var(--font-display); font-size:12px;
+    letter-spacing:1px; cursor:pointer;
+  }
+  #resetBtn:hover{ background: var(--gold); color: #1a1310; }
+
+  /* ---------- Leaderboard ---------- */
+  .leaderboard{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:7px; }
+  .lb-row{
+    display:flex; align-items:center; gap:9px;
+    background: var(--panel-2); border:1px solid var(--border-soft); border-radius:8px;
+    padding: 8px 10px; transition: background .3s, border-color .3s;
+  }
+  .lb-row.me{ border-color: var(--blood-bright); background: #241612; }
+  .lb-rank{
+    font-family: var(--font-mono); font-weight:700; color: var(--ink-faint);
+    width: 20px; text-align:center; font-size: 12.5px;
+  }
+  .lb-row:nth-child(1) .lb-rank{ color: var(--gold-bright); }
+  .lb-name{ flex:1; font-size: 13px; font-weight:600; min-width:0;}
+  .lb-name small{ display:block; font-weight:400; color: var(--ink-faint); font-size: 10px; }
+  .lb-net{ font-family: var(--font-mono); font-size: 13px; color: var(--green); font-weight:700; white-space:nowrap; }
+
+  /* ---------- Chronicle ---------- */
+  .chronicle-feed{ display:flex; flex-direction:column; gap:10px; }
+  .clip{
+    border-left: 3px solid var(--border); padding: 4px 0 4px 12px; font-size: 13px;
+    color: var(--ink-dim); line-height:1.5;
+  }
+  .clip .when{
+    display:block; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.5px;
+    text-transform:uppercase; color: var(--ink-faint); margin-bottom:2px;
+  }
+  .clip.fresh{ border-left-color: var(--blood-bright); color: var(--ink); }
+  .clip.fresh .when{ color: var(--blood-bright); }
+  .clip b{ color: var(--gold); font-weight:700; }
+
+  /* ---------- Footer ---------- */
+  .site-footer{
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 10;
+    padding: 10px 20px calc(10px + env(safe-area-inset-bottom));
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    text-align: center;
+    font-size: 12px;
+    color: var(--ink-faint);
+  }
+  .site-footer a{ color: var(--ink-faint); text-decoration: underline; }
+  .site-footer a:hover{ color: var(--gold-bright); }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 920px){
+    .layout{
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "list"
+        "auction"
+        "board"
+        "chronicle";
+      padding: 16px 14px 32px;
+    }
+    .brand h1{ font-size: 22px; }
+    .countdown{ font-size: 44px; }
+  }
+  @media (max-width: 480px){
+    .topbar{ padding: 16px 14px 14px; }
+    .stat{ min-width: 84px; padding:6px 10px; }
+    .stat-value{ font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">$</span>
+    <div>
+      <h1>DEBT ARENA</h1>
+      <p class="tagline">Where your problems become someone else's profit.</p>
+    </div>
+  </div>
+  <div class="stats-strip">
+    <div class="stat"><span class="stat-label">Cash</span><span class="stat-value" id="statCash">$0</span></div>
+    <div class="stat"><span class="stat-label">Burden Credits</span><span class="stat-value" id="statCredits">0</span></div>
+    <div class="stat"><span class="stat-label">Next Arena</span><span class="stat-value" id="nextNoon">--:--:--</span></div>
+  </div>
+</header>
+
+<main class="layout">
+
+  <section class="panel panel-list">
+    <h2>List a Burden</h2>
+    <p class="panel-sub">Pick something you're sick of carrying.</p>
+    <div class="debt-picker" id="debtPicker"></div>
+    <div class="custom-debt">
+      <input id="customDebtInput" placeholder="...or type your own burden" maxlength="60">
+      <button id="customDebtBtn" type="button">Add</button>
+    </div>
+    <div class="reserve-row" id="reserveRow" hidden>
+      <label id="reserveLabel">Reserve (minimum bid)</label>
+      <input type="number" id="reserveInput" min="1" step="1">
+      <button id="listBtn" type="button">PUT IT ON THE BLOCK</button>
+    </div>
+  </section>
+
+  <section class="panel panel-auction">
+    <h2>Active Auction</h2>
+    <div id="auctionEmpty" class="auction-empty">No burden on the block right now.<br>List one on the left to start the bidding war.</div>
+
+    <div id="auctionLive" class="auction-live" hidden>
+      <div class="lot-title" id="lotTitle">—</div>
+      <div class="lot-meta" id="lotMeta">—</div>
+      <div class="countdown" id="countdown">45</div>
+      <div class="chant" id="chant"></div>
+      <div class="current-bid">
+        <span class="cb-label">Current Bid</span>
+        <span class="cb-value" id="currentBidValue">$0</span>
+        <span class="cb-bidder" id="currentBidderName">— no bids yet, they're circling —</span>
+      </div>
+      <div class="bid-feed" id="bidFeed"></div>
+    </div>
+
+    <div id="auctionResult" class="auction-result" hidden></div>
+  </section>
+
+  <section class="panel panel-leaderboard">
+    <h2>Leaderboard</h2>
+    <p class="panel-sub">Ranked by net payout this week.</p>
+    <ol class="leaderboard" id="leaderboardList"></ol>
+  </section>
+
+  <section class="panel panel-chronicle">
+    <h2>Auction House Chronicle</h2>
+    <p class="panel-sub">Everyone else's mess, for your entertainment.</p>
+    <div class="chronicle-feed" id="chronicleFeed"></div>
+  </section>
+
+</main>
+
+<footer class="site-footer">built by <a href="https://adrianbudny.com" target="_blank" rel="noreferrer">ab</a></footer>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- Data ---------------- */
+
+  var DEBT_PRESETS = [
+    { id:'loan',    title:"Student loan payment",              note:"$340 due Friday, autopay disabled itself out of spite", face:340, min:80 },
+    { id:'dentist', title:"Dentist appointment",                note:"6-month cleaning, now closer to a root canal", face:60,  min:20 },
+    { id:'gift',    title:"Best friend's birthday gift",        note:"Deadline: tomorrow. Budget: none. Guilt: maximum.", face:45, min:15 },
+    { id:'library', title:"Overdue library books",              note:"Fine triples at midnight", face:12, min:5 },
+    { id:'jury',    title:"Jury duty summons",                  note:"Civic duty, zero enthusiasm", face:25, min:10 },
+    { id:'gym',     title:"Gym contract cancellation call",     note:"37 minutes on hold, guaranteed", face:200, min:50 }
+  ];
+
+  var NPC_POOL = ['Bob','Charlie','Dev','Priya','Zoe','Omar','Nate','Farid','Lena','Theo','Maya'];
+
+  var LEADERBOARD_NPCS = [
+    { name:'Priya',  offloaded:410, net:151 },
+    { name:'Jason',  offloaded:340, net:94  },
+    { name:'Zoe',    offloaded:205, net:61  },
+    { name:'Omar',   offloaded:150, net:38  },
+    { name:'Nate',   offloaded:95,  net:22  }
+  ];
+
+  var CHRONICLE_SEED = [
+    { when:'2 days ago', html:'<b>Alice</b> posted "Quarterly tax filing due in 14 days" &mdash; minimum bid $50. <b>Bob</b> won at $127 + 5 burden credits. Bob instantly re-auctions to Charlie.' },
+    { when:'Yesterday', html:'<b>Maya</b> listed "Call mom back, she is upset" expiring in 3 hours &mdash; starting bid $15. <b>Dev</b> bought it for $23 because he owed his mom a call anyway.' },
+    { when:'This week', html:'<b>Jason</b> has the streak: offloaded $340 in obligations this week with net payout of $94. Currently #2 on leaderboard.' }
+  ];
+
+  /* ---------------- State ---------------- */
+
+  var state = {
+    cash: 0,
+    credits: 0,
+    offloadedCount: 0,
+    offloadedValue: 0,
+    netPayout: 0
+  };
+
+  try{
+    var saved = JSON.parse(localStorage.getItem('debtArenaState') || 'null');
+    if(saved && typeof saved === 'object'){
+      state.cash = saved.cash || 0;
+      state.credits = saved.credits || 0;
+      state.offloadedCount = saved.offloadedCount || 0;
+      state.offloadedValue = saved.offloadedValue || 0;
+      state.netPayout = saved.netPayout || 0;
+    }
+  }catch(e){ /* private mode or blocked storage: ignore, start fresh */ }
+
+  function persist(){
+    try{ localStorage.setItem('debtArenaState', JSON.stringify(state)); }catch(e){}
+  }
+
+  var auction = null; // active auction object while running
+  var pendingDebt = null;
+
+  /* ---------------- Helpers ---------------- */
+
+  function $(id){ return document.getElementById(id); }
+  function rand(min, max){ return Math.floor(Math.random() * (max - min + 1)) + min; }
+  function pick(arr){ return arr[rand(0, arr.length - 1)]; }
+  function money(n){ return '$' + Math.round(n).toLocaleString('en-US'); }
+
+  function hue(name){
+    var h = 0;
+    for(var i=0;i<name.length;i++){ h = (h*31 + name.charCodeAt(i)) % 360; }
+    return h;
+  }
+  function avatarHtml(name){
+    var h = hue(name);
+    var initial = name.charAt(0).toUpperCase();
+    return '<span class="avatar" style="background:hsl('+h+',62%,58%)">'+initial+'</span>';
+  }
+
+  /* ---------------- Stats / leaderboard render ---------------- */
+
+  function renderStats(){
+    $('statCash').textContent = money(state.cash);
+    $('statCredits').textContent = state.credits;
+  }
+
+  function renderLeaderboard(){
+    var rows = LEADERBOARD_NPCS.slice();
+    rows.push({ name:'You', offloaded: state.offloadedValue, net: state.netPayout, me:true });
+    rows.sort(function(a,b){ return b.net - a.net; });
+
+    var html = '';
+    rows.forEach(function(r, i){
+      html += '<li class="lb-row'+(r.me?' me':'')+'">'
+            + '<span class="lb-rank">#'+(i+1)+'</span>'
+            + avatarHtml(r.name)
+            + '<span class="lb-name">'+r.name+'<small>'+money(r.offloaded)+' offloaded</small></span>'
+            + '<span class="lb-net">'+money(r.net)+'</span>'
+            + '</li>';
+    });
+    $('leaderboardList').innerHTML = html;
+  }
+
+  /* ---------------- Chronicle ---------------- */
+
+  function renderChronicleSeed(){
+    var html = '';
+    CHRONICLE_SEED.forEach(function(c){
+      html += '<div class="clip"><span class="when">'+c.when+'</span>'+c.html+'</div>';
+    });
+    $('chronicleFeed').innerHTML = html;
+  }
+
+  function addChronicle(html, fresh){
+    var el = document.createElement('div');
+    el.className = 'clip' + (fresh ? ' fresh' : '');
+    el.innerHTML = '<span class="when">Just now</span>' + html;
+    var feed = $('chronicleFeed');
+    feed.insertBefore(el, feed.firstChild);
+  }
+
+  /* ---------------- Debt picker ---------------- */
+
+  function renderDebtPicker(){
+    var html = '';
+    DEBT_PRESETS.forEach(function(d){
+      html += '<button type="button" class="debt-card" data-id="'+d.id+'">'
+            + '<div class="debt-card-title">'+d.title+'</div>'
+            + '<div class="debt-card-note">'+d.note+'</div>'
+            + '<div class="debt-card-face">Face value '+money(d.face)+' &middot; suggested reserve '+money(d.min)+'</div>'
+            + '</button>';
+    });
+    $('debtPicker').innerHTML = html;
+
+    Array.prototype.forEach.call($('debtPicker').querySelectorAll('.debt-card'), function(btn){
+      btn.addEventListener('click', function(){
+        if(auction) return;
+        var debt = DEBT_PRESETS.filter(function(d){ return d.id === btn.getAttribute('data-id'); })[0];
+        selectDebt(debt, btn);
+      });
+    });
+  }
+
+  function selectDebt(debt, btnEl){
+    pendingDebt = debt;
+    Array.prototype.forEach.call(document.querySelectorAll('.debt-card'), function(b){ b.classList.remove('selected'); });
+    if(btnEl) btnEl.classList.add('selected');
+    $('reserveRow').hidden = false;
+    $('reserveInput').value = debt.min;
+    $('reserveLabel').textContent = 'Reserve for "' + debt.title + '"';
+  }
+
+  $('customDebtBtn').addEventListener('click', function(){
+    if(auction) return;
+    var val = $('customDebtInput').value.trim();
+    if(!val) return;
+    var debt = { id:'custom-'+Date.now(), title: val, note:"self-reported burden, no receipts required", face: rand(30, 220), min: rand(10, 60) };
+    Array.prototype.forEach.call(document.querySelectorAll('.debt-card'), function(b){ b.classList.remove('selected'); });
+    selectDebt(debt, null);
+    $('customDebtInput').value = '';
+  });
+  $('customDebtInput').addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ $('customDebtBtn').click(); }
+  });
+
+  /* ---------------- Auction lifecycle ---------------- */
+
+  var CHANT_5 = ['GOING ONCE...', "SOMEONE STOP THIS...", "LAST CALL..."];
+  var CHANT_2 = ['GOING TWICE...', 'FINAL SECONDS...'];
+
+  function setControlsLocked(locked){
+    Array.prototype.forEach.call(document.querySelectorAll('.debt-card'), function(b){
+      b.classList.toggle('disabled', locked);
+    });
+    $('customDebtBtn').disabled = locked;
+    $('customDebtInput').disabled = locked;
+    $('listBtn').disabled = locked;
+  }
+
+  $('listBtn').addEventListener('click', function(){
+    if(auction || !pendingDebt) return;
+    var reserve = parseInt($('reserveInput').value, 10);
+    if(!reserve || reserve < 1) reserve = pendingDebt.min;
+    startAuction(pendingDebt, reserve);
+  });
+
+  function startAuction(debt, reserve){
+    auction = {
+      debt: debt,
+      reserve: reserve,
+      timeLeft: 45,
+      currentBid: 0,
+      currentBidder: null,
+      lastBidder: null,
+      tickHandle: null,
+      bidHandle: null,
+      active: true
+    };
+
+    $('auctionEmpty').hidden = true;
+    $('auctionResult').hidden = true;
+    $('auctionLive').hidden = false;
+    $('reserveRow').hidden = true;
+    setControlsLocked(true);
+
+    $('lotTitle').textContent = debt.title;
+    $('lotMeta').textContent = 'Reserve ' + money(reserve) + '  •  ' + debt.note;
+    $('bidFeed').innerHTML = '';
+    $('chant').textContent = '';
+    $('currentBidValue').textContent = money(0);
+    $('currentBidderName').textContent = '— no bids yet, they’re circling —';
+    updateCountdownDisplay();
+
+    auction.tickHandle = setInterval(tick, 1000);
+    scheduleNextBid();
+  }
+
+  function updateCountdownDisplay(){
+    var el = $('countdown');
+    el.textContent = auction.timeLeft;
+    el.classList.toggle('urgent', auction.timeLeft <= 10);
+
+    var chant = $('chant');
+    if(auction.currentBid > 0 && auction.timeLeft === 5){ chant.textContent = pick(CHANT_5); }
+    else if(auction.currentBid > 0 && auction.timeLeft === 2){ chant.textContent = pick(CHANT_2); }
+    else if(auction.timeLeft > 5){ chant.textContent = ''; }
+  }
+
+  function tick(){
+    if(!auction) return;
+    auction.timeLeft--;
+    if(auction.timeLeft <= 0){
+      updateCountdownDisplay();
+      endAuction();
+      return;
+    }
+    updateCountdownDisplay();
+  }
+
+  function scheduleNextBid(){
+    if(!auction || !auction.active) return;
+    var urgent = auction.timeLeft <= 12;
+    var delay = urgent ? rand(700, 1800) : rand(1600, 3800);
+    auction.bidHandle = setTimeout(function(){
+      if(!auction || !auction.active) return;
+      if(auction.timeLeft <= 0) return;
+      maybeBid();
+      scheduleNextBid();
+    }, delay);
+  }
+
+  var BID_FLAVOR = [
+    '', '', '', '', // mostly no flavor
+    ' &mdash; "I need the credits"',
+    ' &mdash; "beats my own debts"',
+    ' &mdash; throws in a burden credit for good measure',
+    ' &mdash; didn’t even read what it was'
+  ];
+
+  function maybeBid(){
+    var skipChance = auction.currentBid === 0 ? 0.05 : 0.22;
+    if(Math.random() < skipChance) return;
+
+    var candidates = NPC_POOL.filter(function(n){ return n !== auction.lastBidder; });
+    var bidder = pick(candidates);
+
+    var base = auction.currentBid > 0 ? auction.currentBid : Math.max(0, auction.reserve - rand(0,5));
+    var increment = rand(3, 10 + Math.floor(base * 0.18));
+    var newBid = base + increment;
+    if(newBid < auction.reserve) newBid = auction.reserve;
+
+    auction.currentBid = newBid;
+    auction.currentBidder = bidder;
+    auction.lastBidder = bidder;
+
+    $('currentBidValue').textContent = money(newBid);
+    $('currentBidValue').classList.remove('flash');
+    void $('currentBidValue').offsetWidth;
+    $('currentBidValue').classList.add('flash');
+    $('currentBidderName').innerHTML = avatarHtml(bidder) + bidder + ' is in the lead';
+
+    var row = document.createElement('div');
+    row.className = 'bid-row';
+    row.innerHTML = avatarHtml(bidder) + '<span>' + bidder + ' bids</span>'
+                   + '<span class="flavor">' + pick(BID_FLAVOR) + '</span>'
+                   + '<span class="amt">' + money(newBid) + '</span>';
+    var feed = $('bidFeed');
+    feed.appendChild(row);
+    while(feed.children.length > 40){ feed.removeChild(feed.firstChild); }
+    feed.scrollTop = feed.scrollHeight;
+  }
+
+  function endAuction(){
+    var a = auction;
+    a.active = false;
+    clearInterval(a.tickHandle);
+    clearTimeout(a.bidHandle);
+
+    var resultEl = $('auctionResult');
+    resultEl.hidden = false;
+
+    if(a.currentBid > 0){
+      var creditsBonus = Math.max(2, Math.round(a.currentBid / 20) + rand(0, 3));
+      state.cash += a.currentBid;
+      state.credits += creditsBonus;
+      state.offloadedCount += 1;
+      state.offloadedValue += a.debt.face;
+      state.netPayout += a.currentBid;
+      persist();
+
+      resultEl.className = 'auction-result sold';
+      resultEl.innerHTML =
+        '<div class="headline">SOLD to ' + a.currentBidder + ' for ' + money(a.currentBid) + '!</div>'
+        + '<div class="sub">+' + creditsBonus + ' burden credits landed in your account. "' + a.debt.title + '" is officially not your problem.</div>'
+        + '<button id="resetBtn" type="button">List Another Burden</button>';
+
+      addChronicle('<b>You</b> offloaded "' + a.debt.title + '" to <b>' + a.currentBidder + '</b> for ' + money(a.currentBid) + ' + ' + creditsBonus + ' burden credits.', true);
+
+      var winner = a.currentBidder;
+      var title = a.debt.title;
+      setTimeout(function(){
+        addChronicle('<b>' + winner + '</b> is already re-listing "' + title + '" before the ink dries...', true);
+        setTimeout(function(){
+          var buyer2 = pick(NPC_POOL.filter(function(n){ return n !== winner; }));
+          var resale = Math.max(5, Math.round(a.currentBid * (0.6 + Math.random() * 0.8)));
+          addChronicle('<b>' + buyer2 + '</b> snapped it up for ' + money(resale) + '. The burden lives on.', true);
+        }, rand(2200, 3600));
+      }, rand(2600, 4200));
+
+    } else {
+      resultEl.className = 'auction-result nosale';
+      resultEl.innerHTML =
+        '<div class="headline">No bids.</div>'
+        + '<div class="sub">Even the vultures passed on "' + a.debt.title + '". It’s still yours.</div>'
+        + '<button id="resetBtn" type="button">Try Again</button>';
+
+      addChronicle('No takers for "' + a.debt.title + '". Reserve of ' + money(a.reserve) + ' scared everyone off.', true);
+    }
+
+    renderStats();
+    renderLeaderboard();
+
+    $('resetBtn').addEventListener('click', resetToIdle);
+  }
+
+  function resetToIdle(){
+    auction = null;
+    pendingDebt = null;
+    $('auctionLive').hidden = true;
+    $('auctionResult').hidden = true;
+    $('auctionEmpty').hidden = false;
+    $('reserveRow').hidden = true;
+    Array.prototype.forEach.call(document.querySelectorAll('.debt-card'), function(b){ b.classList.remove('selected'); });
+    setControlsLocked(false);
+  }
+
+  /* ---------------- Next-noon clock ---------------- */
+
+  function updateNextNoon(){
+    var now = new Date();
+    var next = new Date(now);
+    next.setHours(12,0,0,0);
+    if(now.getTime() >= next.getTime()){ next.setDate(next.getDate() + 1); }
+    var diff = Math.max(0, next.getTime() - now.getTime());
+    var h = Math.floor(diff / 3600000);
+    var m = Math.floor((diff % 3600000) / 60000);
+    var s = Math.floor((diff % 60000) / 1000);
+    function pad(n){ return (n < 10 ? '0' : '') + n; }
+    $('nextNoon').textContent = pad(h) + ':' + pad(m) + ':' + pad(s);
+  }
+
+  /* ---------------- Init ---------------- */
+
+  renderDebtPicker();
+  renderChronicleSeed();
+  renderStats();
+  renderLeaderboard();
+  updateNextNoon();
+  setInterval(updateNextNoon, 1000);
+
+})();
+</script>
+</body>
+</html>
