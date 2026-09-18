@@ -11,7 +11,7 @@
   <h1>Idea Lab</h1>
 </header>
 <main id="grid" class="grid" aria-live="polite"></main>
-<footer class="site-footer">built by <a href="https://adrianbudny.com" target="_blank" rel="noreferrer">ab</a></footer>
+<footer class="site-footer">built by <a href="https://adrianbudny.com" target="_blank" rel="noreferrer">ab</a> · <a href="#" id="signOut">sign out</a></footer>
 <script>
   fetch('/manifest.json')
     .then((r) => r.json())
@@ -38,6 +38,10 @@
     .catch(() => {
       document.getElementById('grid').innerHTML = '<p class="empty">Couldn\'t load the gallery — try refreshing.</p>';
     });
+  document.getElementById('signOut').addEventListener('click', (e) => {
+    e.preventDefault();
+    fetch('/api/logout', { method: 'POST' }).finally(() => location.href = '/login.html');
+  });
 </script>
 </body>
 </html>
