@@ -22,5 +22,11 @@
     "title": "Star Rally",
     "description": "A Mario Party-inspired board game for your phone — roll, race around the board, and win stars in 5 quick mini-games. Single-device demo, up to 6 players.",
     "date": "2026-09-12"
+  },
+  {
+    "slug": "editorial-os",
+    "title": "Editorial OS",
+    "description": "A mobile-first editorial intelligence dashboard — tracks how your thinking evolves over time, from a single observation to a strengthening thesis to a published piece.",
+    "date": "2026-09-18"
   }
 ]
