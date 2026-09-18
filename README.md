@@ -64,7 +64,15 @@ idea-lab/
    from `index.html` / `assets/gallery.css`.
 4. Prepend a new `{slug, title, description, date}` entry to
    `manifest.json` (keep it valid JSON — an array of objects, nothing
-   else).
+   else). If your prototype splits into more than one file (e.g. a large
+   one uses a same-folder `data.js`/`app.js` instead of one inline
+   `index.html`), reference them with an **absolute path**
+   (`/p/<slug>/data.js`), never a relative one (`data.js`). This site's
+   `vercel.json` has `trailingSlash: false`, so a prototype's live URL is
+   `/p/<slug>` with no trailing slash — a relative script src resolves
+   against `/p/`, not `/p/<slug>/`, silently 404ing with a blank page and
+   no console error. This actually happened (Editorial OS, 2026-09-18);
+   caught only by testing in a real WebKit browser, not curl or Chromium.
 5. Commit and push to `main`. **As of 2026-09-09, Vercel is NOT yet
    connected to this repo for deploy-on-push** (blocked on a one-time
    GitHub↔Vercel account link the owner still needs to do) — until that's
