@@ -3,7 +3,12 @@ import { verifyToken, COOKIE_NAME } from "./lib/auth.js";
 // No config.matcher — runs on every request; exclusions are handled here in
 // plain code instead of a path-to-regexp pattern, which is easier to get
 // right for a framework-less project than the Next.js-style matcher syntax.
-const PUBLIC_PATHS = new Set(["/login.html", "/api/login", "/api/logout", "/manifest.json", "/icon.svg", "/icon-512.png"]);
+// Both forms of the login path are listed — vercel.json has cleanUrls:true,
+// which 308-redirects "/login.html" to "/login" outside this middleware's
+// control. Excluding only one form meant the other kept redirecting back
+// into the clean-URL redirect, an infinite loop (seen live: "Safari can't
+// open the page because too many redirects occurred").
+const PUBLIC_PATHS = new Set(["/login", "/login.html", "/api/login", "/api/logout", "/manifest.json", "/icon.svg", "/icon-512.png"]);
 
 export default async function middleware(request) {
   const url = new URL(request.url);
@@ -18,7 +23,7 @@ export default async function middleware(request) {
   const valid = secret ? await verifyToken(token, secret) : false;
   if (valid) return;
 
-  url.pathname = "/login.html";
+  url.pathname = "/login";
   url.searchParams.set("next", path);
   return Response.redirect(url, 302);
 }

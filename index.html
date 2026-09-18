@@ -40,7 +40,7 @@
     });
   document.getElementById('signOut').addEventListener('click', (e) => {
     e.preventDefault();
-    fetch('/api/logout', { method: 'POST' }).finally(() => location.href = '/login.html');
+    fetch('/api/logout', { method: 'POST' }).finally(() => location.href = '/login');
   });
 </script>
 </body>
