@@ -73,14 +73,22 @@ idea-lab/
    against `/p/`, not `/p/<slug>/`, silently 404ing with a blank page and
    no console error. This actually happened (Editorial OS, 2026-09-18);
    caught only by testing in a real WebKit browser, not curl or Chromium.
-5. Commit and push to `main`. **As of 2026-09-09, Vercel is NOT yet
-   connected to this repo for deploy-on-push** (blocked on a one-time
-   GitHub↔Vercel account link the owner still needs to do) — until that's
-   fixed, `git push` alone does not update the live site. Also run
-   `vercel --prod --yes` from this directory to actually deploy, or check
-   first whether the owner has since connected it (a plain `git push`
-   triggering a deploy on its own means it's fixed — drop this manual
-   step once confirmed).
+5. Commit and push to `main`. **As of 2026-09-18, Vercel IS connected to
+   this repo for deploy-on-push** — a plain `git push` alone triggers a
+   production deploy, no manual `vercel --prod` step needed.
+6. **Verifying the deploy actually went live**: the whole site sits behind
+   a password gate (`middleware.js`, added 2026-09-18) — every path
+   redirects unauthenticated requests to `/login`, `/p/<slug>` included.
+   That means an unauthenticated `curl` to a prototype's own URL always
+   returns a 302, for a real deployed page and for a typo'd slug alike —
+   it proves nothing and must not be used as a live-check (this bit an
+   automated run once already: it built and pushed all 5 pending
+   prototypes correctly, then got stuck unable to tell "deployed" from
+   "not deployed" and aborted without closing the loop). Instead: wait
+   ~30–45 seconds after pushing, then `curl` **`/manifest.json`**
+   specifically — that one path is intentionally excluded from the auth
+   gate — and check that it now contains an entry for your new `slug`.
+   That's the real live-deploy signal.
 
 ## Notes
 
