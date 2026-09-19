@@ -1,5 +1,11 @@
 [
   {
+    "slug": "draft-phantom",
+    "title": "Draft Phantom",
+    "description": "Your half-finished drafts haunt a graveyard ranked by decay score — write a few sentences and watch it drop live, then exorcise the draft when it's ready.",
+    "date": "2026-09-19"
+  },
+  {
     "slug": "exit-strategy",
     "title": "Exit Strategy",
     "description": "A one-click FIRE calculator that chains your salary, local job market data, and index-fund growth into the exact month you can resign — and flags in red the moment your spending drifts.",

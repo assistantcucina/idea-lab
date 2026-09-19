@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Draft Phantom</title>
+<meta name="description" content="Your half-finished drafts haunt a graveyard with a live decay score — write to exorcise them.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0d0a14;
+    --panel:#161122;
+    --panel2:#1d1730;
+    --border:#2e2545;
+    --text:#f1ecfb;
+    --muted:#9a8fc0;
+    --accent:#a78bfa;
+    --accent2:#c4b5fd;
+    --danger:#f97a6b;
+    --warn:#f5b86e;
+    --safe:#6ee7c2;
+    --shadow: 0 20px 50px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 800px 400px at 15% -5%, rgba(167,139,250,.16), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 90% 10%, rgba(196,181,253,.1), transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh;
+    padding-bottom:64px;
+  }
+  .spooky{font-family:'Special Elite',monospace;letter-spacing:.02em;}
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:22px 28px 18px;
+    max-width:1120px;margin:0 auto;
+    flex-wrap:wrap;gap:12px;
+  }
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand .ghost{font-size:26px;filter:drop-shadow(0 0 10px rgba(167,139,250,.6));}
+  .brand h1{font-size:22px;margin:0;letter-spacing:.01em;}
+  .brand h1 span{color:var(--accent2);}
+  .stats{display:flex;gap:18px;font-size:12.5px;color:var(--muted);}
+  .stats b{color:var(--text);font-size:14px;}
+
+  /* ---------- connect screen ---------- */
+  .connect-wrap{
+    max-width:520px;margin:8vh auto 0;padding:0 20px;
+    text-align:center;
+  }
+  .connect-card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:38px 30px 32px;
+    box-shadow:var(--shadow);
+  }
+  .connect-ghost{font-size:52px;margin-bottom:6px;animation:float 3.2s ease-in-out infinite;}
+  @keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+  .connect-card h2{margin:6px 0 8px;font-size:19px;}
+  .connect-card p{color:var(--muted);font-size:13.5px;line-height:1.6;margin:0 0 24px;}
+  .connect-btns{display:flex;flex-direction:column;gap:10px;}
+  .connect-btn{
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    padding:13px 18px;border-radius:11px;border:1px solid var(--border);
+    background:var(--panel2);color:var(--text);font-size:14px;font-weight:600;
+    cursor:pointer;transition:.15s;
+  }
+  .connect-btn:hover{border-color:var(--accent);background:#241c3d;transform:translateY(-1px);}
+  .connect-btn .ico{font-size:16px;}
+  .connect-status{margin-top:16px;font-size:12.5px;color:var(--muted);min-height:18px;}
+  .dot-load{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-right:6px;animation:pulse 0.9s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:.3;}50%{opacity:1;}}
+
+  /* ---------- graveyard ---------- */
+  .hidden{display:none !important;}
+  .hook{
+    max-width:720px;margin:0 auto 26px;padding:0 28px;
+    color:var(--muted);font-size:14px;line-height:1.6;
+  }
+  .graveyard{
+    max-width:1120px;margin:0 auto;padding:0 28px;
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+    gap:16px;
+  }
+  .toast{
+    position:fixed;top:18px;left:50%;transform:translateX(-50%) translateY(-140%);
+    background:var(--panel2);border:1px solid var(--accent);color:var(--text);
+    padding:11px 20px;border-radius:10px;font-size:13px;font-weight:600;
+    box-shadow:var(--shadow);z-index:80;transition:transform .35s cubic-bezier(.2,.9,.3,1.3);
+    white-space:nowrap;
+  }
+  .toast.show{transform:translateX(-50%) translateY(0);}
+
+  .card{
+    background:var(--panel);border:1px solid var(--border);border-radius:15px;
+    padding:18px 18px 16px;cursor:pointer;position:relative;overflow:hidden;
+    transition:transform .18s, border-color .18s, box-shadow .18s;
+  }
+  .card:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:0 12px 30px rgba(0,0,0,.35);}
+  .card.exiting{animation:exorcise .55s ease forwards;pointer-events:none;}
+  @keyframes exorcise{
+    0%{opacity:1;transform:translateY(0) scale(1);filter:blur(0);}
+    100%{opacity:0;transform:translateY(-40px) scale(.85);filter:blur(6px);}
+  }
+  .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px;}
+  .card-ghost{
+    font-size:24px;line-height:1;flex-shrink:0;
+    filter:drop-shadow(0 0 8px rgba(167,139,250,.35));
+  }
+  .card h3{font-size:15px;margin:0 0 4px;line-height:1.35;}
+  .card-meta{font-size:11.5px;color:var(--muted);}
+  .decay-badge{
+    display:flex;align-items:center;gap:6px;
+    padding:5px 10px;border-radius:20px;font-size:12px;font-weight:700;
+    border:1px solid;flex-shrink:0;
+  }
+  .decay-ring{width:8px;height:8px;border-radius:50%;animation:heartbeat 1.4s ease-in-out infinite;}
+  @keyframes heartbeat{
+    0%,100%{transform:scale(1);opacity:.65;}
+    50%{transform:scale(1.55);opacity:1;}
+  }
+  .bar-track{height:6px;background:var(--panel2);border-radius:4px;overflow:hidden;margin:12px 0 8px;}
+  .bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .4s ease;}
+  .card-foot{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);}
+  .card-foot b{color:var(--text);}
+
+  /* level colors applied via inline style vars per card */
+
+  /* ---------- detail panel ---------- */
+  .overlay{
+    position:fixed;inset:0;background:rgba(6,4,12,.72);backdrop-filter:blur(3px);
+    z-index:60;opacity:0;pointer-events:none;transition:opacity .25s;
+  }
+  .overlay.show{opacity:1;pointer-events:auto;}
+  .panel{
+    position:fixed;top:0;right:0;bottom:0;width:min(480px,100vw);
+    background:var(--panel);border-left:1px solid var(--border);
+    z-index:61;transform:translateX(100%);transition:transform .3s cubic-bezier(.2,.85,.3,1);
+    display:flex;flex-direction:column;
+    box-shadow:-20px 0 50px rgba(0,0,0,.5);
+  }
+  .panel.show{transform:translateX(0);}
+  .panel-scroll{overflow-y:auto;flex:1;padding:22px 22px 100px;}
+  .panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px;}
+  .panel-head h2{font-size:18px;margin:0;line-height:1.35;flex:1;}
+  .close-btn{
+    background:var(--panel2);border:1px solid var(--border);color:var(--muted);
+    width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:15px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .close-btn:hover{color:var(--text);border-color:var(--accent);}
+  .panel-meta{font-size:12px;color:var(--muted);margin-bottom:18px;}
+
+  .decay-hero{
+    display:flex;align-items:center;gap:16px;
+    background:var(--panel2);border:1px solid var(--border);border-radius:14px;
+    padding:16px 18px;margin-bottom:18px;
+  }
+  .decay-num-wrap{position:relative;width:58px;height:58px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+  .decay-num-ring{position:absolute;inset:0;border-radius:50%;border:3px solid var(--border);}
+  .decay-num-pulse{position:absolute;inset:0;border-radius:50%;border:3px solid var(--accent);animation:heartring 1.4s ease-in-out infinite;}
+  @keyframes heartring{0%{transform:scale(.9);opacity:.9;}70%{transform:scale(1.35);opacity:0;}100%{opacity:0;}}
+  .decay-num{position:relative;font-size:18px;font-weight:800;}
+  .decay-label{font-size:12px;color:var(--muted);line-height:1.5;}
+  .decay-label b{color:var(--text);display:block;font-size:13px;}
+
+  .section-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 8px;font-weight:700;}
+  textarea.editor{
+    width:100%;min-height:170px;resize:vertical;
+    background:var(--bg);border:1px solid var(--border);border-radius:12px;
+    color:var(--text);font-family:'Inter',sans-serif;font-size:13.5px;line-height:1.65;
+    padding:14px;outline:none;transition:border-color .15s;
+  }
+  textarea.editor:focus{border-color:var(--accent);}
+  .word-progress{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin:8px 0 22px;}
+  .word-progress b{color:var(--accent2);}
+
+  .prompts{display:flex;flex-direction:column;gap:8px;margin-bottom:24px;}
+  .prompt{
+    background:var(--panel2);border:1px solid var(--border);border-radius:10px;
+    padding:11px 13px;font-size:12.5px;line-height:1.55;color:var(--text);
+    display:flex;gap:9px;
+  }
+  .prompt .spark{flex-shrink:0;}
+
+  .exorcise-btn{
+    width:100%;padding:14px;border-radius:12px;border:none;
+    background:linear-gradient(90deg,#7c3aed,#a78bfa);color:#fff;
+    font-size:14.5px;font-weight:700;cursor:pointer;letter-spacing:.01em;
+    transition:transform .15s, opacity .15s;
+  }
+  .exorcise-btn:hover:not(:disabled){transform:translateY(-1px);}
+  .exorcise-btn:disabled{background:var(--panel2);color:var(--muted);cursor:not-allowed;}
+  .exorcise-hint{text-align:center;font-size:11.5px;color:var(--muted);margin-top:9px;}
+
+  .empty-state{
+    max-width:420px;margin:14vh auto;text-align:center;color:var(--muted);
+    padding:0 20px;
+  }
+  .empty-state .ghost{font-size:44px;display:block;margin-bottom:10px;}
+
+  /* ---------- footer ---------- */
+  .site-footer{
+    position:fixed;left:0;right:0;bottom:0;z-index:70;
+    padding:10px 20px calc(10px + env(safe-area-inset-bottom));
+    background:var(--panel);border-top:1px solid var(--border);
+    text-align:center;font-size:12px;color:var(--muted);
+  }
+  .site-footer a{color:var(--muted);text-decoration:underline;}
+  .site-footer a:hover{color:var(--accent2);}
+
+  @media (max-width:520px){
+    .panel{width:100vw;}
+    .topbar{padding:18px 18px 14px;}
+    .graveyard{padding:0 18px;}
+    .hook{padding:0 18px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><span class="ghost">👻</span><h1 class="spooky">Draft <span>Phantom</span></h1></div>
+  <div class="stats hidden" id="statsBar">
+    <div><b id="statHaunting">0</b> still haunting you</div>
+    <div><b id="statExorcised">0</b> exorcised</div>
+  </div>
+</div>
+
+<!-- connect screen -->
+<div class="connect-wrap" id="connectScreen">
+  <div class="connect-card">
+    <div class="connect-ghost">👻</div>
+    <h2>Nothing's haunting you&nbsp;yet</h2>
+    <p>Grant Draft Phantom access to see which of your half-finished drafts have been quietly rotting in the graveyard.</p>
+    <div class="connect-btns">
+      <button class="connect-btn" onclick="connect('Google Drive')"><span class="ico">🗂️</span> Connect Google Drive</button>
+      <button class="connect-btn" onclick="connect('Notion')"><span class="ico">◼️</span> Connect Notion</button>
+    </div>
+    <div class="connect-status" id="connectStatus"></div>
+  </div>
+</div>
+
+<!-- graveyard -->
+<div class="hook hidden" id="hookLine">Watch your dusty half-finished drafts haunt you with a live decay score — write a few sentences and watch it drop in real time.</div>
+<div class="graveyard hidden" id="graveyard"></div>
+<div class="empty-state hidden" id="emptyState">
+  <span class="ghost">✨</span>
+  Graveyard's clear. Every draft has been exorcised — nothing left to haunt you.
+</div>
+
+<div class="overlay" id="overlay" onclick="closePanel()"></div>
+<div class="panel" id="panel">
+  <div class="panel-scroll" id="panelScroll"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer class="site-footer">built by <a href="https://adrianbudny.com" target="_blank" rel="noreferrer">ab</a></footer>
+
+<script>
+(function(){
+  "use strict";
+
+  var DECAY_PER_WORD = 0.15;
+  var EXORCISE_THRESHOLD = 2.0;
+
+  var DRAFTS = [
+    {
+      id: "career-pivot",
+      title: "Defining My Decade: Career Pivot",
+      pctDone: 15,
+      age: 124,
+      decay: 9.1,
+      body: "It's been three months since I said it out loud for the first time: I don't want to do this anymore.\n\nEveryone assumes a career pivot at this point means you've failed at the first thing. Nobody tells you it can just mean you finally know what you're optimizing for.\n\n",
+      prompts: [
+        "Open with the specific moment you knew it was time to pivot.",
+        "Name the fear you had to get past — readers connect with the messy part.",
+        "End with one concrete thing you'd tell your past self."
+      ]
+    },
+    {
+      id: "tech-takes",
+      title: "The Worst Tech Takes I Saw in 2026",
+      pctDone: 30,
+      age: 347,
+      decay: 8.7,
+      body: "2026 gave us no shortage of confidently wrong predictions. Here are the ones that aged the worst, ranked from merely embarrassing to catastrophically off.\n\n1. \"Nobody will still be writing code by hand in 2026.\" — a VC, January 2026\n2. \n3. \n",
+      prompts: [
+        "Pick your 3 spiciest takes and lead with the worst one.",
+        "Add a receipt (screenshot or quote) for each take to back it up.",
+        "Close with the one take you laughed at that turned out right."
+      ]
+    },
+    {
+      id: "sourdough",
+      title: "Why Sourdough Is Just Yeast Gaslighting",
+      pctDone: 10,
+      age: 89,
+      decay: 6.2,
+      body: "Outline:\n- The promise: \"just flour, water, and time\"\n- The betrayal: the starter that looked dead, then wasn't, then was\n- The 3am feeding schedule nobody consents to\n- The loaf that came out a hockey puck anyway\n- Reluctant reconciliation with the jar on my counter\n\n",
+      prompts: [
+        "Turn your outline bullets into full paragraphs, one at a time.",
+        "Add the moment your starter \"betrayed\" you — that's the hook.",
+        "Wrap with the reluctant reconciliation with your starter."
+      ]
+    },
+    {
+      id: "terraform",
+      title: "Terraform Side Project Config",
+      pctDone: 60,
+      age: 14,
+      decay: 2.3,
+      body: "A working base config for spinning up a small side project on cheap infra, plus the one gotcha that cost me an hour of my life.\n\n```hcl\nresource \"aws_instance\" \"app\" {\n  ami           = var.ami_id\n  instance_type = \"t3.micro\"\n}\n```\n\nThe gotcha: \n",
+      prompts: [
+        "Paste in the actual config block readers can copy.",
+        "Explain the one gotcha that cost you an hour.",
+        "Add a \"what I'd do differently\" closer."
+      ]
+    }
+  ];
+
+  var exorcisedCount = 0;
+  var activeDraft = null;
+
+  function wordCount(str){
+    var m = str.trim().match(/\S+/g);
+    return m ? m.length : 0;
+  }
+
+  function levelForDecay(d){
+    if (d >= 6.5) return {c:"var(--danger)", label:"critical"};
+    if (d >= 3.5) return {c:"var(--warn)", label:"decaying"};
+    return {c:"var(--safe)", label:"fresh-ish"};
+  }
+
+  function ghostForDecay(d){
+    if (d >= 6.5) return "👻";
+    if (d >= 3.5) return "🫥";
+    return "🙂‍↔️";
+  }
+
+  function connect(source){
+    var status = document.getElementById('connectStatus');
+    status.innerHTML = '<span class="dot-load"></span>Authenticating with ' + source + '&hellip;';
+    setTimeout(function(){
+      status.innerHTML = '<span class="dot-load"></span>Scanning drafts for decay&hellip;';
+    }, 650);
+    setTimeout(function(){
+      document.getElementById('connectScreen').classList.add('hidden');
+      document.getElementById('hookLine').classList.remove('hidden');
+      document.getElementById('graveyard').classList.remove('hidden');
+      document.getElementById('statsBar').classList.remove('hidden');
+      renderGraveyard();
+      showToast('Connected to ' + source + ' — ' + DRAFTS.length + ' drafts found');
+    }, 1300);
+  }
+
+  function renderGraveyard(){
+    var grid = document.getElementById('graveyard');
+    var sorted = DRAFTS.slice().sort(function(a,b){ return b.decay - a.decay; });
+    grid.innerHTML = '';
+    sorted.forEach(function(d){
+      var lvl = levelForDecay(d.decay);
+      var card = document.createElement('div');
+      card.className = 'card';
+      card.setAttribute('data-id', d.id);
+      card.onclick = function(){ openPanel(d.id); };
+      card.innerHTML =
+        '<div class="card-top">' +
+          '<div><div class="card-ghost">' + ghostForDecay(d.decay) + '</div></div>' +
+          '<div class="decay-badge" style="color:' + lvl.c + ';border-color:' + lvl.c + '55;background:' + lvl.c + '14;">' +
+            '<span class="decay-ring" style="background:' + lvl.c + ';animation-duration:' + heartbeatDuration(d.decay) + 's;"></span>' +
+            d.decay.toFixed(1) +
+          '</div>' +
+        '</div>' +
+        '<h3>' + d.title + '</h3>' +
+        '<div class="card-meta">' + d.age + ' days old &middot; ' + d.pctDone + '% done</div>' +
+        '<div class="bar-track"><div class="bar-fill" style="width:' + d.pctDone + '%;"></div></div>' +
+        '<div class="card-foot"><span>' + lvl.label + '</span><b>open →</b></div>';
+      grid.appendChild(card);
+    });
+    updateStats();
+    document.getElementById('emptyState').classList.toggle('hidden', sorted.length > 0);
+    document.getElementById('graveyard').classList.toggle('hidden', sorted.length === 0);
+  }
+
+  function heartbeatDuration(decay){
+    var d = 2.5 - (decay * 0.18);
+    if (d < 0.55) d = 0.55;
+    if (d > 2.5) d = 2.5;
+    return d.toFixed(2);
+  }
+
+  function openPanel(id){
+    var draft = DRAFTS.filter(function(d){ return d.id === id; })[0];
+    if (!draft) return;
+    hideToast();
+    activeDraft = draft;
+    draft._originalWords = wordCount(draft.body);
+    draft._liveWords = draft._originalWords;
+
+    var scroll = document.getElementById('panelScroll');
+    scroll.innerHTML =
+      '<div class="panel-head">' +
+        '<h2>' + draft.title + '</h2>' +
+        '<button class="close-btn" onclick="closePanel()">&times;</button>' +
+      '</div>' +
+      '<div class="panel-meta">' + draft.age + ' days old &middot; ' + draft.pctDone + '% done</div>' +
+      '<div class="decay-hero">' +
+        '<div class="decay-num-wrap">' +
+          '<div class="decay-num-ring"></div>' +
+          '<div class="decay-num-pulse" id="decayPulseRing" style="animation-duration:' + heartbeatDuration(draft.decay) + 's;"></div>' +
+          '<div class="decay-num" id="decayNum">' + draft.decay.toFixed(1) + '</div>' +
+        '</div>' +
+        '<div class="decay-label"><b id="decayStatusLabel">' + levelForDecay(draft.decay).label + '</b>decay score — drops live as you write, creeps back up if you delete.</div>' +
+      '</div>' +
+      '<div class="section-label">✨ AI next-step prompts</div>' +
+      '<div class="prompts">' +
+        draft.prompts.map(function(p){ return '<div class="prompt"><span class="spark">✨</span>' + p + '</div>'; }).join('') +
+      '</div>' +
+      '<div class="section-label">Draft</div>' +
+      '<textarea class="editor" id="editor">' + draft.body + '</textarea>' +
+      '<div class="word-progress"><span>words added: <b id="wordsAdded">0</b></span><span id="wordGoal"></span></div>' +
+      '<button class="exorcise-btn" id="exorciseBtn" disabled onclick="exorcise()">Exorcise this draft</button>' +
+      '<div class="exorcise-hint" id="exorciseHint"></div>';
+
+    document.getElementById('editor').addEventListener('input', function(e){
+      liveUpdate(e.target.value);
+    });
+    liveUpdate(draft.body);
+
+    document.getElementById('overlay').classList.add('show');
+    document.getElementById('panel').classList.add('show');
+  }
+
+  function liveUpdate(text){
+    var d = activeDraft;
+    if (!d) return;
+    var currentWords = wordCount(text);
+    var added = Math.max(0, currentWords - d._originalWords);
+    var newDecay = d.decay - added * DECAY_PER_WORD;
+    if (newDecay < 0.1) newDecay = 0.1;
+    if (newDecay > d.decay) newDecay = d.decay;
+
+    var lvl = levelForDecay(newDecay);
+    document.getElementById('decayNum').textContent = newDecay.toFixed(1);
+    document.getElementById('decayNum').style.color = lvl.c;
+    document.getElementById('decayPulseRing').style.borderColor = lvl.c;
+    document.getElementById('decayPulseRing').style.animationDuration = heartbeatDuration(newDecay) + 's';
+    document.getElementById('decayStatusLabel').textContent = lvl.label;
+    document.getElementById('wordsAdded').textContent = added;
+
+    var btn = document.getElementById('exorciseBtn');
+    var hint = document.getElementById('exorciseHint');
+    var goalEl = document.getElementById('wordGoal');
+    if (newDecay <= EXORCISE_THRESHOLD){
+      btn.disabled = false;
+      hint.textContent = 'Decay low enough — this one\'s ready to publish.';
+      goalEl.textContent = 'ready ✓';
+    } else {
+      btn.disabled = true;
+      var wordsNeeded = Math.ceil((newDecay - EXORCISE_THRESHOLD) / DECAY_PER_WORD);
+      hint.textContent = 'Keep writing — about ' + wordsNeeded + ' more words to unlock Exorcise.';
+      goalEl.textContent = 'need ' + wordsNeeded + ' more';
+    }
+
+    d._liveDecay = newDecay;
+  }
+
+  function closePanel(){
+    document.getElementById('overlay').classList.remove('show');
+    document.getElementById('panel').classList.remove('show');
+    activeDraft = null;
+  }
+
+  function exorcise(){
+    if (!activeDraft) return;
+    var id = activeDraft.id;
+    var card = document.querySelector('.card[data-id="' + id + '"]');
+    closePanel();
+    DRAFTS = DRAFTS.filter(function(d){ return d.id !== id; });
+    exorcisedCount++;
+    if (card){
+      card.classList.add('exiting');
+      setTimeout(function(){
+        renderGraveyard();
+        showToast('👻💨 Exorcised! One less draft haunting you.');
+      }, 500);
+    } else {
+      renderGraveyard();
+    }
+  }
+
+  function updateStats(){
+    document.getElementById('statHaunting').textContent = DRAFTS.length;
+    document.getElementById('statExorcised').textContent = exorcisedCount;
+  }
+
+  var toastTimer = null;
+  function showToast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 2600);
+  }
+  function hideToast(){
+    clearTimeout(toastTimer);
+    document.getElementById('toast').classList.remove('show');
+  }
+
+  window.connect = connect;
+  window.closePanel = closePanel;
+  window.exorcise = exorcise;
+})();
+</script>
+</body>
+</html>
