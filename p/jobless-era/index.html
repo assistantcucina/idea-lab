@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jobless Era — roast your employer</title>
+<style>
+  :root{
+    --bg:#0a0a0d;
+    --panel:#141319;
+    --panel2:#1c1a23;
+    --border:#2c2934;
+    --text:#f4f1ee;
+    --muted:#9b93a6;
+    --hot:#ff3d6e;
+    --hot2:#ff8a3d;
+    --acid:#c6ff3d;
+    --grad: linear-gradient(135deg,#ff3d6e 0%, #ff8a3d 100%);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding-bottom:70px;
+    min-height:100vh;
+    background-image:
+      radial-gradient(circle at 10% 0%, rgba(255,61,110,0.14), transparent 40%),
+      radial-gradient(circle at 90% 10%, rgba(255,138,61,0.12), transparent 45%);
+  }
+  .wrap{max-width:720px;margin:0 auto;padding:28px 20px 40px;}
+
+  header.top{text-align:center;margin-bottom:26px;}
+  .kicker{
+    display:inline-block;
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--hot);
+    background:rgba(255,61,110,0.12);
+    border:1px solid rgba(255,61,110,0.35);
+    padding:4px 10px;
+    border-radius:999px;
+    margin-bottom:14px;
+  }
+  h1{
+    font-size:clamp(38px,9vw,58px);
+    line-height:0.95;
+    margin:0 0 10px;
+    font-weight:900;
+    letter-spacing:-0.02em;
+    background: var(--grad);
+    -webkit-background-clip:text;
+    background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+  .sub{color:var(--muted);font-size:15px;max-width:480px;margin:0 auto;line-height:1.5;}
+
+  .composer{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:18px;
+    margin:26px 0 30px;
+    box-shadow:0 20px 60px -30px rgba(255,61,110,0.35);
+  }
+  .composer label{
+    display:block;font-size:12px;text-transform:uppercase;letter-spacing:.08em;
+    color:var(--muted);margin-bottom:8px;font-weight:700;
+  }
+  .input-row{display:flex;gap:10px;}
+  input#employerInput{
+    flex:1;
+    background:var(--panel2);
+    border:1px solid var(--border);
+    color:var(--text);
+    font-size:16px;
+    padding:14px 14px;
+    border-radius:12px;
+    outline:none;
+  }
+  input#employerInput:focus{border-color:var(--hot);}
+  button.roast-btn{
+    background:var(--grad);
+    color:#160a0f;
+    border:none;
+    font-weight:800;
+    font-size:15px;
+    padding:0 22px;
+    border-radius:12px;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:transform .12s ease;
+  }
+  button.roast-btn:active{transform:scale(0.96);}
+  button.roast-btn:disabled{opacity:.5;cursor:default;}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+  .chip{
+    background:var(--panel2);
+    border:1px solid var(--border);
+    color:var(--muted);
+    font-size:12.5px;
+    padding:6px 12px;
+    border-radius:999px;
+    cursor:pointer;
+  }
+  .chip:hover{border-color:var(--hot);color:var(--text);}
+
+  /* slide viewer */
+  .viewer{
+    display:none;
+    margin-bottom:34px;
+  }
+  .viewer.active{display:block;}
+  .slides{
+    position:relative;
+    aspect-ratio:9/13;
+    max-height:560px;
+    border-radius:22px;
+    overflow:hidden;
+    border:1px solid var(--border);
+    box-shadow:0 30px 70px -30px rgba(0,0,0,0.7);
+  }
+  .slide{
+    position:absolute;inset:0;
+    display:none;
+    flex-direction:column;
+    justify-content:flex-end;
+    padding:26px 22px 30px;
+  }
+  .slide.show{display:flex;}
+  .slide-1{background:linear-gradient(160deg,#2b0f1e,#0a0a0d 70%);}
+  .slide-2{background:linear-gradient(160deg,#241227,#0a0a0d 70%);}
+  .slide-3{background:linear-gradient(160deg,#301206,#0a0a0d 70%);}
+  .slide-tag{
+    font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--hot2);font-weight:800;margin-bottom:10px;
+  }
+  .slide-employer{
+    font-size:13px;color:var(--muted);margin-bottom:6px;font-weight:600;
+  }
+  .slide-headline{
+    font-size:clamp(22px,6vw,28px);
+    font-weight:900;
+    line-height:1.08;
+    margin:0 0 12px;
+  }
+  .slide-body{
+    font-size:15px;line-height:1.5;color:#e6e1ea;
+  }
+  .slide-count{
+    position:absolute;top:16px;right:18px;
+    font-size:12px;color:var(--muted);font-weight:700;
+    background:rgba(0,0,0,0.4);
+    padding:4px 9px;border-radius:999px;
+  }
+  .dots{position:absolute;top:16px;left:18px;right:70px;display:flex;gap:5px;}
+  .dot{flex:1;height:3px;background:rgba(255,255,255,0.18);border-radius:3px;overflow:hidden;}
+  .dot.filled{background:var(--hot);}
+
+  .slide-nav{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-top:14px;gap:10px;
+  }
+  .nav-btn{
+    background:var(--panel2);border:1px solid var(--border);color:var(--text);
+    padding:10px 16px;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;
+  }
+  .nav-btn:disabled{opacity:.35;cursor:default;}
+  .share-row{display:flex;gap:8px;flex:1;justify-content:flex-end;}
+  .share-btn{
+    background:var(--grad);color:#160a0f;border:none;font-weight:800;
+    font-size:13.5px;padding:10px 16px;border-radius:10px;cursor:pointer;
+  }
+  .share-btn.secondary{
+    background:var(--panel2);color:var(--text);border:1px solid var(--border);
+  }
+
+  .toast{
+    position:fixed;left:50%;bottom:88px;transform:translate(-50%,20px);
+    background:var(--text);color:#0a0a0d;font-weight:700;font-size:13.5px;
+    padding:10px 18px;border-radius:999px;
+    opacity:0;pointer-events:none;
+    transition:all .25s ease;
+    z-index:50;
+    white-space:nowrap;
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0);}
+
+  section.feed{margin-top:8px;}
+  .feed-head{
+    display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;
+  }
+  .feed-head h2{font-size:14px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:0;font-weight:800;}
+  .feed-head span{font-size:12px;color:var(--muted);}
+
+  .feed-item{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:15px 16px;
+    margin-bottom:10px;
+    cursor:pointer;
+    transition:border-color .15s ease;
+  }
+  .feed-item:hover{border-color:var(--hot);}
+  .feed-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  .feed-employer{font-weight:800;font-size:15px;}
+  .feed-heat{
+    font-size:12px;color:var(--hot2);font-weight:800;display:flex;align-items:center;gap:4px;
+  }
+  .feed-line{color:var(--muted);font-size:13.5px;line-height:1.4;}
+  .feed-tags{margin-top:8px;display:flex;gap:6px;}
+  .feed-tag{
+    font-size:10.5px;color:var(--acid);background:rgba(198,255,61,0.08);
+    border:1px solid rgba(198,255,61,0.25);padding:2px 8px;border-radius:999px;
+    text-transform:uppercase;letter-spacing:.04em;font-weight:700;
+  }
+
+  footer.site-footer{
+    position:fixed;left:0;right:0;bottom:0;z-index:10;
+    padding:10px 20px calc(10px + env(safe-area-inset-bottom));
+    background:var(--panel);
+    border-top:1px solid var(--border);
+    text-align:center;font-size:12px;color:var(--muted);
+  }
+  footer.site-footer a{color:var(--muted);text-decoration:underline;}
+  footer.site-footer a:hover{color:var(--hot2);}
+
+  @media (max-width:420px){
+    .input-row{flex-direction:column;}
+    button.roast-btn{padding:14px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <span class="kicker">Jobless Era</span>
+    <h1>Roast your<br>employer.</h1>
+    <p class="sub">Drop in any company. Get a brutally specific, instantly shareable 3-slide roast of exactly why the working conditions there destroy human souls.</p>
+  </header>
+
+  <div class="composer">
+    <label for="employerInput">Employer name</label>
+    <div class="input-row">
+      <input id="employerInput" type="text" placeholder="e.g. Acme Corp, your last job, your current job…" autocomplete="off">
+      <button class="roast-btn" id="roastBtn">Roast It 🔥</button>
+    </div>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="viewer" id="viewer">
+    <div class="slides" id="slides"></div>
+    <div class="slide-nav">
+      <button class="nav-btn" id="prevBtn">← Prev</button>
+      <div class="share-row">
+        <button class="share-btn secondary" id="copyBtn">Copy text</button>
+        <button class="share-btn" id="shareBtn">Share ✕</button>
+      </div>
+      <button class="nav-btn" id="nextBtn">Next →</button>
+    </div>
+  </div>
+
+  <section class="feed">
+    <div class="feed-head">
+      <h2>Trending Now</h2>
+      <span id="feedCount"></span>
+    </div>
+    <div id="feedList"></div>
+  </section>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer class="site-footer">built by <a href="https://adrianbudny.com" target="_blank" rel="noreferrer">ab</a></footer>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---- seed data (exact example content from the idea card) ----
+  var SEED = [
+    {
+      employer: "Acme Corp",
+      tag: "PowerPoint Death March",
+      headline: "40% of your life, spent making charts about why there isn't enough time to make charts.",
+      body: "Meetings about meetings. A culture of performative productivity where the real work happens after everyone logs off the fake work.",
+      heat: 412,
+      tags: ["burnout","theater"]
+    },
+    {
+      employer: "TechScale Inc",
+      tag: "Reorg Every Q",
+      headline: "6 titles in 18 months. Salary hasn't moved once.",
+      body: "HR sends a survey about change. You feel nothing. The org chart is now a Rorschach test.",
+      heat: 287,
+      tags: ["reorg","stagnation"]
+    },
+    {
+      employer: "FinServ Bank",
+      tag: "Quiet Firing Elite",
+      headline: "They offer flexibility. They also track chair occupancy, 9 to 5.",
+      body: "WFH is career suicide here. The pension vests in 2087. Bring snacks, you'll be here a while.",
+      heat: 198,
+      tags: ["surveillance","pension trap"]
+    }
+  ];
+
+  // ---- generator archetypes for arbitrary employer names ----
+  var ARCHETYPES = [
+    {
+      tag: "The Alignment Spiral",
+      headline: function(n){ return "At " + n + ", nothing ships until it's been aligned on by 14 people who disagree."; },
+      body: "Every project has a kickoff, a re-kickoff, and a 'quick sync' that runs 90 minutes. The actual work happens in the 20 minutes before the next status update is due."
+    },
+    {
+      tag: "Mandatory Fun Hour",
+      headline: function(n){ return n + " calls it culture. You call it a hostage situation with a taco bar."; },
+      body: "Attendance is 'optional' the way a performance review is optional. Someone always cries during the trivia round. It is never joyful."
+    },
+    {
+      tag: "The Eternal Pilot Program",
+      headline: function(n){ return "Three years in, and " + n + " still calls your team's project 'the pilot.'"; },
+      body: "Headcount never comes. Praise arrives quarterly, budget never does. You are permanently one all-hands away from being cut."
+    },
+    {
+      tag: "Open Door, Closed Ears",
+      headline: function(n){ return "Leadership at " + n + " has an open-door policy. The door leads to a Calendly link, three weeks out."; },
+      body: "Feedback goes up and evaporates. Decisions come down fully formed, dated the week before, explained after the fact in a Slack post nobody reads."
+    },
+    {
+      tag: "The Growth Mindset Trap",
+      headline: function(n){ return n + " thinks your burnout is a 'growth opportunity.'"; },
+      body: "There is a wellness Slack channel. There is not a smaller workload. Self-care is a 15-minute breathing app subscription, expensed once."
+    },
+    {
+      tag: "Undead Org Chart",
+      headline: function(n){ return "Your manager at " + n + " has been 'backfilling' your old manager's role for 11 months."; },
+      body: "Nobody is officially in charge of anything, which means everyone is unofficially in charge of covering for the last reorg. Ask who owns the roadmap and watch three people go quiet."
+    }
+  ];
+
+  function pickArchetypes(seedStr, count){
+    // deterministic-ish shuffle from a string seed so the same name gets the same roast
+    var arr = ARCHETYPES.slice();
+    var h = 0;
+    for (var i=0;i<seedStr.length;i++){ h = (h*31 + seedStr.charCodeAt(i)) >>> 0; }
+    for (var i=arr.length-1;i>0;i--){
+      h = (h*1103515245 + 12345) >>> 0;
+      var j = h % (i+1);
+      var tmp = arr[i]; arr[i]=arr[j]; arr[j]=tmp;
+    }
+    return arr.slice(0,count);
+  }
+
+  function generateRoast(name){
+    var picks = pickArchetypes(name, 3);
+    return {
+      employer: name,
+      slides: picks.map(function(a){
+        return { tag: a.tag, headline: a.headline(name), body: a.body };
+      }),
+      heat: 20 + (name.length * 7) % 61,
+      tags: ["fresh roast", "unverified"]
+    };
+  }
+
+  // ---- state ----
+  var feed = SEED.map(function(s){
+    return {
+      employer: s.employer,
+      heat: s.heat,
+      tags: s.tags,
+      slides: [
+        { tag: s.tag, headline: s.headline, body: s.body },
+        { tag: "The Numbers", headline: "Glassdoor: 2.3★ average, 61% would not recommend to a friend.", body: "Recent headline: quiet layoffs disguised as 'restructuring for efficiency.' Exit interviews mysteriously stop being scheduled." },
+        { tag: "The Verdict", headline: "Would you survive a year at " + s.employer + "?", body: "Screenshot this. Tag the coworker who already knows. Someone there needs to see it." }
+      ]
+    };
+  });
+
+  var current = null; // {employer, slides, isNew}
+  var slideIndex = 0;
+
+  var els = {
+    input: document.getElementById('employerInput'),
+    roastBtn: document.getElementById('roastBtn'),
+    chips: document.getElementById('chips'),
+    viewer: document.getElementById('viewer'),
+    slides: document.getElementById('slides'),
+    prev: document.getElementById('prevBtn'),
+    next: document.getElementById('nextBtn'),
+    copy: document.getElementById('copyBtn'),
+    share: document.getElementById('shareBtn'),
+    feedList: document.getElementById('feedList'),
+    feedCount: document.getElementById('feedCount'),
+    toast: document.getElementById('toast')
+  };
+
+  function renderChips(){
+    els.chips.innerHTML = '';
+    SEED.forEach(function(s){
+      var c = document.createElement('div');
+      c.className = 'chip';
+      c.textContent = s.employer;
+      c.addEventListener('click', function(){
+        els.input.value = s.employer;
+        openRoast(s.employer);
+      });
+      els.chips.appendChild(c);
+    });
+    var wild = document.createElement('div');
+    wild.className = 'chip';
+    wild.textContent = 'Surprise me →';
+    wild.addEventListener('click', function(){
+      var names = ["Bloomtech","Northwind Labs","Vantage Media","Halcyon Group","Kestrel Systems"];
+      var n = names[Math.floor(Math.random()*names.length)];
+      els.input.value = n;
+      openRoast(n);
+    });
+    els.chips.appendChild(wild);
+  }
+
+  function findFeedItem(name){
+    var norm = name.trim().toLowerCase();
+    for (var i=0;i<feed.length;i++){
+      if (feed[i].employer.toLowerCase() === norm) return feed[i];
+    }
+    return null;
+  }
+
+  function openRoast(name){
+    name = (name || '').trim();
+    if (!name) return;
+
+    var existing = findFeedItem(name);
+    if (existing){
+      current = existing;
+    } else {
+      var g = generateRoast(name);
+      current = { employer: g.employer, heat: g.heat, tags: g.tags, slides: g.slides, isNew: true };
+    }
+    slideIndex = 0;
+    renderSlides();
+    els.viewer.classList.add('active');
+    els.viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function renderSlides(){
+    els.slides.innerHTML = '';
+    var dotsWrap = document.createElement('div');
+    dotsWrap.className = 'dots';
+    current.slides.forEach(function(_, i){
+      var d = document.createElement('div');
+      d.className = 'dot' + (i <= slideIndex ? ' filled' : '');
+      dotsWrap.appendChild(d);
+    });
+    els.slides.appendChild(dotsWrap);
+
+    var count = document.createElement('div');
+    count.className = 'slide-count';
+    count.textContent = (slideIndex+1) + ' / ' + current.slides.length;
+    els.slides.appendChild(count);
+
+    current.slides.forEach(function(s, i){
+      var div = document.createElement('div');
+      div.className = 'slide slide-' + (i+1) + (i === slideIndex ? ' show' : '');
+      div.innerHTML =
+        '<div class="slide-tag">' + escapeHtml(s.tag) + '</div>' +
+        '<div class="slide-employer">' + escapeHtml(current.employer) + '</div>' +
+        '<div class="slide-headline">' + escapeHtml(s.headline) + '</div>' +
+        '<div class="slide-body">' + escapeHtml(s.body) + '</div>';
+      els.slides.appendChild(div);
+    });
+
+    els.prev.disabled = slideIndex === 0;
+    els.next.disabled = slideIndex === current.slides.length - 1;
+  }
+
+  function escapeHtml(str){
+    var d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  function showToast(msg){
+    els.toast.textContent = msg;
+    els.toast.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(function(){
+      els.toast.classList.remove('show');
+    }, 1800);
+  }
+
+  function renderFeed(){
+    var sorted = feed.slice().sort(function(a,b){ return b.heat - a.heat; });
+    els.feedList.innerHTML = '';
+    els.feedCount.textContent = sorted.length + ' companies roasted';
+    sorted.forEach(function(item){
+      var el = document.createElement('div');
+      el.className = 'feed-item';
+      el.innerHTML =
+        '<div class="feed-top">' +
+          '<div class="feed-employer">' + escapeHtml(item.employer) + '</div>' +
+          '<div class="feed-heat">🔥 ' + item.heat.toLocaleString() + '</div>' +
+        '</div>' +
+        '<div class="feed-line">' + escapeHtml(item.slides[0].headline) + '</div>' +
+        '<div class="feed-tags">' + item.tags.map(function(t){ return '<span class="feed-tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>';
+      el.addEventListener('click', function(){
+        els.input.value = item.employer;
+        openRoast(item.employer);
+      });
+      els.feedList.appendChild(el);
+    });
+  }
+
+  // ---- events ----
+  els.roastBtn.addEventListener('click', function(){
+    openRoast(els.input.value);
+  });
+  els.input.addEventListener('keydown', function(e){
+    if (e.key === 'Enter') openRoast(els.input.value);
+  });
+  els.prev.addEventListener('click', function(){
+    if (slideIndex > 0){ slideIndex--; renderSlides(); }
+  });
+  els.next.addEventListener('click', function(){
+    if (slideIndex < current.slides.length - 1){ slideIndex++; renderSlides(); }
+  });
+  els.copy.addEventListener('click', function(){
+    var s = current.slides[slideIndex];
+    var text = current.employer + ' — ' + s.tag + '\n\n' + s.headline + '\n' + s.body + '\n\n(via Jobless Era)';
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){
+        showToast('Copied to clipboard 📋');
+      }).catch(function(){
+        showToast('Copy failed — select manually');
+      });
+    } else {
+      showToast('Copy failed — select manually');
+    }
+  });
+  els.share.addEventListener('click', function(){
+    var name = current.employer;
+    var existing = findFeedItem(name);
+    if (existing){
+      existing.heat += 1 + Math.floor(Math.random()*4);
+    } else {
+      feed.unshift({
+        employer: name,
+        heat: current.heat || 24,
+        tags: current.tags || ['fresh roast'],
+        slides: current.slides
+      });
+      current.isNew = false;
+    }
+    renderFeed();
+    showToast('Shared to the feed ✕ — heat rising 🔥');
+  });
+
+  // init
+  renderChips();
+  renderFeed();
+})();
+</script>
+</body>
+</html>
