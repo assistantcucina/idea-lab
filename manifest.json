@@ -1,5 +1,11 @@
 [
   {
+    "slug": "exit-strategy",
+    "title": "Exit Strategy",
+    "description": "A one-click FIRE calculator that chains your salary, local job market data, and index-fund growth into the exact month you can resign — and flags in red the moment your spending drifts.",
+    "date": "2026-09-19"
+  },
+  {
     "slug": "reverse-auction",
     "title": "Reverse Auction",
     "description": "Post a task and a budget, then watch specialists bid the price down in real time until you accept the lowest offer.",

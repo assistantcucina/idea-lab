@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Exit Strategy — FIRE Countdown</title>
+<style>
+  :root{
+    --bg:#0a0f14;
+    --panel:#101820;
+    --panel-2:#151f29;
+    --border:#213040;
+    --text:#eaf1f5;
+    --muted:#7c93a3;
+    --mint:#34d8a3;
+    --mint-dim:#1d5c49;
+    --red:#f76a6a;
+    --red-dim:#5c2323;
+    --amber:#f2c14e;
+    --mono:'SF Mono','JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(52,216,163,0.07), transparent 55%),
+      radial-gradient(900px 500px at 100% 0%, rgba(52,216,163,0.05), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+    padding:28px 18px calc(72px + env(safe-area-inset-bottom));
+    min-height:100vh;
+  }
+  .wrap{max-width:1080px;margin:0 auto;}
+
+  header.top{margin-bottom:26px;}
+  .brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;}
+  .brand h1{
+    font-size:26px;margin:0;letter-spacing:-0.01em;font-weight:800;
+  }
+  .brand h1 span{color:var(--mint);}
+  .tagline{color:var(--muted);margin:8px 0 0;font-size:14.5px;max-width:640px;line-height:1.5;}
+
+  .grid{
+    display:grid;
+    grid-template-columns: 360px 1fr;
+    gap:20px;
+  }
+  @media (max-width: 880px){
+    .grid{grid-template-columns:1fr;}
+  }
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:20px;
+  }
+  .card + .card{margin-top:20px;}
+  .card h2{
+    margin:0 0 4px;
+    font-size:13px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--muted);
+    font-weight:700;
+  }
+  .card h2 small{
+    display:block;text-transform:none;letter-spacing:0;color:var(--muted);
+    font-size:12px;margin-top:2px;font-weight:400;
+  }
+
+  /* ---- form ---- */
+  .field{margin-top:16px;}
+  .field label{
+    display:block;font-size:12px;color:var(--muted);margin-bottom:6px;
+    font-weight:600;letter-spacing:0.01em;
+  }
+  .field select, .field input{
+    width:100%;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:10px;
+    padding:11px 12px;
+    font-size:15px;
+    font-family:inherit;
+  }
+  .field select:focus, .field input:focus{outline:2px solid var(--mint-dim);outline-offset:1px;}
+  .field .hint{font-size:11.5px;color:var(--muted);margin-top:5px;}
+  .money-input{position:relative;}
+  .money-input span{
+    position:absolute;left:12px;top:50%;transform:translateY(-50%);
+    color:var(--muted);font-size:15px;pointer-events:none;
+  }
+  .money-input input{padding-left:24px;}
+
+  .overspend-toggle{
+    margin-top:18px;
+    display:flex;align-items:center;justify-content:space-between;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:12px 14px;
+  }
+  .overspend-toggle .label{font-size:13px;}
+  .overspend-toggle .label b{display:block;font-size:13.5px;}
+  .overspend-toggle .label small{color:var(--muted);font-size:11.5px;}
+  .switch{
+    position:relative;width:44px;height:25px;flex:none;margin-left:12px;
+  }
+  .switch input{opacity:0;width:0;height:0;position:absolute;}
+  .switch .track{
+    position:absolute;inset:0;background:#2a3a48;border-radius:999px;transition:background .15s;
+    cursor:pointer;
+  }
+  .switch .track:before{
+    content:"";position:absolute;width:19px;height:19px;left:3px;top:3px;
+    background:#fff;border-radius:50%;transition:transform .15s;
+  }
+  .switch input:checked + .track{background:var(--red);}
+  .switch input:checked + .track:before{transform:translateX(19px);}
+
+  button.primary{
+    margin-top:18px;
+    width:100%;
+    background:var(--mint);
+    color:#04231a;
+    border:none;
+    border-radius:10px;
+    padding:13px;
+    font-size:15px;
+    font-weight:800;
+    cursor:pointer;
+    letter-spacing:0.01em;
+  }
+  button.primary:active{transform:translateY(1px);}
+
+  /* ---- results ---- */
+  .status-row{display:flex;align-items:center;gap:10px;margin-bottom:2px;}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--mint);flex:none;}
+  .dot.red{background:var(--red);}
+  .status-text{font-size:13px;font-weight:700;letter-spacing:0.03em;text-transform:uppercase;color:var(--mint);}
+  .status-text.red{color:var(--red);}
+
+  .countdown{
+    font-family:var(--mono);
+    font-size:64px;
+    font-weight:700;
+    line-height:1;
+    margin:14px 0 2px;
+    letter-spacing:-0.02em;
+  }
+  .countdown.red{color:var(--red);}
+  .countdown small{font-size:20px;color:var(--muted);font-weight:500;margin-left:8px;}
+  .exit-date{color:var(--muted);font-size:14px;margin-bottom:18px;}
+  .exit-date b{color:var(--text);}
+
+  .chain{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
+    margin-top:6px;
+  }
+  @media (max-width:640px){.chain{grid-template-columns:1fr;}}
+  .chain .step{
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:12px 14px;
+  }
+  .chain .step .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;}
+  .chain .step .v{font-family:var(--mono);font-size:17px;font-weight:700;}
+  .chain .step .v.neg{color:var(--red);}
+  .chain .step .v.pos{color:var(--mint);}
+
+  .shift-banner{
+    margin-top:16px;
+    background:var(--red-dim);
+    border:1px solid #7a3838;
+    color:#ffd7d7;
+    border-radius:10px;
+    padding:12px 14px;
+    font-size:13.5px;
+    line-height:1.5;
+    display:none;
+  }
+  .shift-banner.show{display:block;}
+  .shift-banner b{font-family:var(--mono);}
+
+  /* ---- job market table ---- */
+  table.jobs{width:100%;border-collapse:collapse;margin-top:10px;}
+  table.jobs th{
+    text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;
+    letter-spacing:0.05em;padding:8px 10px;border-bottom:1px solid var(--border);
+  }
+  table.jobs td{padding:12px 10px;border-bottom:1px solid var(--border);font-size:14px;vertical-align:middle;}
+  table.jobs tr:last-child td{border-bottom:none;}
+  .role-title{font-weight:600;}
+  .role-note{display:block;color:var(--muted);font-size:11.5px;margin-top:2px;}
+  .role-salary{font-family:var(--mono);}
+  .apply-btn{
+    background:transparent;
+    border:1px solid var(--mint-dim);
+    color:var(--mint);
+    border-radius:8px;
+    padding:7px 12px;
+    font-size:12.5px;
+    font-weight:700;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .apply-btn:hover{background:var(--mint-dim);}
+  .apply-btn.current{
+    border-color:var(--border);color:var(--muted);cursor:default;
+  }
+  .apply-btn.current:hover{background:transparent;}
+
+  /* ---- widget mockup ---- */
+  .widget-section{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;}
+  .phone{
+    width:190px;flex:none;
+    background:#000;
+    border-radius:34px;
+    padding:10px;
+    box-shadow:0 0 0 2px #2a2a2a, 0 20px 40px rgba(0,0,0,0.5);
+  }
+  .phone .screen{
+    background:linear-gradient(160deg,#1a2b3c,#0a1420);
+    border-radius:26px;
+    padding:16px 12px 20px;
+    min-height:220px;
+    position:relative;
+  }
+  .phone .time{font-size:12px;color:#c8d6de;text-align:center;margin-bottom:14px;font-weight:600;}
+  .widget-card{
+    background:rgba(255,255,255,0.06);
+    backdrop-filter:blur(6px);
+    border-radius:20px;
+    padding:14px;
+    border:1px solid rgba(255,255,255,0.08);
+  }
+  .widget-card .wtitle{
+    display:flex;align-items:center;gap:6px;
+    font-size:10.5px;color:#9db0bd;text-transform:uppercase;letter-spacing:0.05em;font-weight:700;
+    margin-bottom:8px;
+  }
+  .widget-card .wdot{width:7px;height:7px;border-radius:50%;background:var(--mint);}
+  .widget-card .wdot.red{background:var(--red);}
+  .widget-card .wnum{font-family:var(--mono);font-size:34px;font-weight:800;color:#fff;line-height:1;}
+  .widget-card .wnum.red{color:var(--red);}
+  .widget-card .wnum span{font-size:14px;color:#9db0bd;font-weight:500;margin-left:4px;}
+  .widget-card .wsub{font-size:11px;color:#9db0bd;margin-top:8px;line-height:1.4;}
+  .widget-card .wsub b{color:#fff;}
+
+  .widget-explainer{flex:1;min-width:220px;padding-top:4px;}
+  .widget-explainer p{color:var(--muted);font-size:13.5px;line-height:1.6;margin:0 0 10px;}
+  .widget-explainer .legend{display:flex;gap:16px;margin-top:10px;flex-wrap:wrap;}
+  .widget-explainer .legend .item{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);}
+
+  .site-footer{
+    position:fixed;left:0;right:0;bottom:0;z-index:10;
+    padding:10px 20px calc(10px + env(safe-area-inset-bottom));
+    background:var(--panel);
+    border-top:1px solid var(--border);
+    text-align:center;font-size:12px;color:var(--muted);
+  }
+  .site-footer a{color:var(--muted);text-decoration:underline;}
+  .site-footer a:hover{color:var(--mint);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand"><h1>EXIT <span>STRATEGY</span></h1></div>
+    <p class="tagline">One-click FIRE math: your salary, your local job market, and index-fund projections, chained into the exact month you can resign — updated live, red the moment your spending drifts.</p>
+  </header>
+
+  <div class="grid">
+
+    <!-- LEFT: inputs -->
+    <div>
+      <div class="card">
+        <h2>Your Numbers<small>Chained into a single countdown</small></h2>
+
+        <div class="field">
+          <label for="loc">Home location</label>
+          <select id="loc">
+            <option value="austin">Austin, TX</option>
+            <option value="nyc">New York, NY</option>
+            <option value="sf">San Francisco, CA</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="role">Current role</label>
+          <input id="role" type="text" readonly>
+        </div>
+
+        <div class="field">
+          <label for="salary">Current salary (gross/yr)</label>
+          <div class="money-input"><span>$</span><input id="salary" type="number" step="1000"></div>
+        </div>
+
+        <div class="field">
+          <label for="savings">Current savings & investments</label>
+          <div class="money-input"><span>$</span><input id="savings" type="number" step="1000"></div>
+        </div>
+
+        <div class="field">
+          <label for="spend">Budgeted monthly spend</label>
+          <div class="money-input"><span>$</span><input id="spend" type="number" step="50"></div>
+          <div class="hint">Sets your FI number at 25× annual spend (4% rule) and your monthly savings rate.</div>
+        </div>
+
+        <div class="overspend-toggle">
+          <div class="label">
+            <b>This month ran hot</b>
+            <small id="overspendPct">Simulate +8% YoY spend drift</small>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="overspend">
+            <span class="track"></span>
+          </label>
+        </div>
+
+        <button class="primary" id="calcBtn">Recalculate exit date</button>
+      </div>
+    </div>
+
+    <!-- RIGHT: results -->
+    <div>
+      <div class="card">
+        <h2>Time To Fire<small>Assumes 7% real market return, 28% effective tax</small></h2>
+
+        <div class="status-row">
+          <div class="dot" id="statusDot"></div>
+          <div class="status-text" id="statusText">On track</div>
+        </div>
+
+        <div class="countdown" id="countdown">— <small>months</small></div>
+        <div class="exit-date" id="exitDate">Enter your numbers to calculate.</div>
+
+        <div class="chain">
+          <div class="step">
+            <div class="k">Current savings</div>
+            <div class="v" id="chainSavings">$0</div>
+          </div>
+          <div class="step">
+            <div class="k">+ monthly investing</div>
+            <div class="v pos" id="chainContribution">$0/mo</div>
+          </div>
+          <div class="step">
+            <div class="k">= FI number (25× spend)</div>
+            <div class="v" id="chainTarget">$0</div>
+          </div>
+        </div>
+
+        <div class="shift-banner" id="shiftBanner"></div>
+      </div>
+
+      <div class="card">
+        <h2>Local Job Market Scan<small>O*NET + Glassdoor, 100-mile radius — click a role to reset the clock</small></h2>
+        <table class="jobs" id="jobsTable">
+          <thead>
+            <tr><th>Role</th><th>Median salary</th><th></th></tr>
+          </thead>
+          <tbody id="jobsBody"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Home Screen Widget<small>Updates monthly — green on track, red the moment spend outpaces the plan</small></h2>
+        <div class="widget-section">
+          <div class="phone">
+            <div class="screen">
+              <div class="time">9:41</div>
+              <div class="widget-card">
+                <div class="wtitle"><span class="wdot" id="wDot"></span> Exit Strategy</div>
+                <div class="wnum" id="wNum">— <span>mo</span></div>
+                <div class="wsub" id="wSub">Waiting for your numbers…</div>
+              </div>
+            </div>
+          </div>
+          <div class="widget-explainer">
+            <p>The widget mirrors whatever's on screen right now: your live countdown, colored by whether this month's actual spend matches your budget.</p>
+            <p>Toggle "this month ran hot" on the left to watch it flip to red and the countdown pull back — exactly like it will on your phone the day your card statement runs over.</p>
+            <div class="legend">
+              <div class="item"><span class="dot"></span> On budget</div>
+              <div class="item"><span class="dot red"></span> Overspending</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer class="site-footer">built by <a href="https://adrianbudny.com" target="_blank" rel="noreferrer">ab</a></footer>
+
+<script>
+(function(){
+  "use strict";
+
+  var LOCATIONS = {
+    austin: {
+      name: "Austin, TX",
+      role: "Software Engineer",
+      salary: 145000,
+      savings: 1040000,
+      spend: 5200,
+      jobs: [
+        {title:"Staff Engineer", salary:205000, note:null},
+        {title:"Senior Software Engineer", salary:172000, note:null},
+        {title:"6-mo Sprint Contract", salary:87000, note:"40% reduced pay, still on pace for $1M FI in ~72mo"}
+      ]
+    },
+    nyc: {
+      name: "New York, NY",
+      role: "Junior Analyst",
+      salary: 68000,
+      savings: 15000,
+      spend: 2200,
+      jobs: [
+        {title:"Senior Analyst", salary:105000, note:"the market rate for your next promotion"},
+        {title:"Associate Director", salary:140000, note:null},
+        {title:"Analyst (Boutique Fund)", salary:82000, note:null}
+      ]
+    },
+    sf: {
+      name: "San Francisco, CA",
+      role: "Product Designer",
+      salary: 132000,
+      savings: 924000,
+      spend: 4800,
+      jobs: [
+        {title:"Senior Product Designer", salary:158000, note:null},
+        {title:"Design Manager", salary:190000, note:null},
+        {title:"Staff Designer (Fintech)", salary:205000, note:null}
+      ]
+    }
+  };
+
+  var ANNUAL_RETURN = 0.07;
+  var MONTHLY_RETURN = ANNUAL_RETURN / 12;
+  var TAKE_HOME_RATE = 0.72; // flat effective post-tax estimate
+  var SWR_MULTIPLE = 25;     // 4% rule
+  var OVERSPEND_FACTOR = 1.08;
+
+  var locEl = document.getElementById('loc');
+  var roleEl = document.getElementById('role');
+  var salaryEl = document.getElementById('salary');
+  var savingsEl = document.getElementById('savings');
+  var spendEl = document.getElementById('spend');
+  var overspendEl = document.getElementById('overspend');
+  var calcBtn = document.getElementById('calcBtn');
+  var jobsBody = document.getElementById('jobsBody');
+
+  var currentKey = 'austin';
+
+  function money(n){
+    n = Math.round(n);
+    return '$' + n.toLocaleString('en-US');
+  }
+
+  function monthsToFI(savings, monthlyContribution, target){
+    var balance = savings;
+    var n = 0;
+    var maxMonths = 1200;
+    if (balance >= target) return 0;
+    if (monthlyContribution <= 0){
+      // still grows from returns alone; simulate but cap
+      while (balance < target && n < maxMonths){
+        balance = balance * (1 + MONTHLY_RETURN);
+        n++;
+      }
+      return n >= maxMonths ? null : n;
+    }
+    while (balance < target && n < maxMonths){
+      balance = balance * (1 + MONTHLY_RETURN) + monthlyContribution;
+      n++;
+    }
+    return n >= maxMonths ? null : n;
+  }
+
+  function addMonths(date, months){
+    var d = new Date(date.getTime());
+    d.setMonth(d.getMonth() + months);
+    return d;
+  }
+
+  function formatDate(d){
+    return d.toLocaleDateString('en-US', {month:'long', year:'numeric'});
+  }
+
+  function loadLocation(key){
+    currentKey = key;
+    var loc = LOCATIONS[key];
+    roleEl.value = loc.role;
+    salaryEl.value = loc.salary;
+    savingsEl.value = loc.savings;
+    spendEl.value = loc.spend;
+    renderJobs(loc);
+  }
+
+  function renderJobs(loc){
+    jobsBody.innerHTML = '';
+    var rows = [{title: loc.role + ' (current)', salary: Number(salaryEl.value), note: null, isCurrent: true}]
+      .concat(loc.jobs);
+    rows.forEach(function(job){
+      var tr = document.createElement('tr');
+
+      var tdRole = document.createElement('td');
+      var titleEl = document.createElement('span');
+      titleEl.className = 'role-title';
+      titleEl.textContent = job.title;
+      tdRole.appendChild(titleEl);
+      if (job.note){
+        var noteEl = document.createElement('span');
+        noteEl.className = 'role-note';
+        noteEl.textContent = job.note;
+        tdRole.appendChild(noteEl);
+      }
+
+      var tdSalary = document.createElement('td');
+      tdSalary.className = 'role-salary';
+      tdSalary.textContent = money(job.salary) + '/yr';
+
+      var tdBtn = document.createElement('td');
+      var btn = document.createElement('button');
+      btn.className = 'apply-btn' + (job.isCurrent ? ' current' : '');
+      btn.textContent = job.isCurrent ? 'current' : 'target this role';
+      if (!job.isCurrent){
+        btn.addEventListener('click', function(){
+          salaryEl.value = job.salary;
+          renderJobs(LOCATIONS[currentKey]);
+          calculate();
+        });
+      } else {
+        btn.disabled = true;
+      }
+      tdBtn.appendChild(btn);
+
+      tr.appendChild(tdRole);
+      tr.appendChild(tdSalary);
+      tr.appendChild(tdBtn);
+      jobsBody.appendChild(tr);
+    });
+  }
+
+  function calculate(){
+    var salary = Number(salaryEl.value) || 0;
+    var savings = Number(savingsEl.value) || 0;
+    var budgetSpend = Number(spendEl.value) || 0;
+    var overspending = overspendEl.checked;
+    var actualSpend = overspending ? budgetSpend * OVERSPEND_FACTOR : budgetSpend;
+
+    var takeHomeMonthly = (salary * TAKE_HOME_RATE) / 12;
+
+    // baseline (budgeted) scenario
+    var baseContribution = takeHomeMonthly - budgetSpend;
+    var baseTarget = budgetSpend * 12 * SWR_MULTIPLE;
+    var baseMonths = monthsToFI(savings, baseContribution, baseTarget);
+
+    // live scenario (what actually happens if this month's trend holds)
+    var liveContribution = takeHomeMonthly - actualSpend;
+    var liveTarget = actualSpend * 12 * SWR_MULTIPLE;
+    var liveMonths = monthsToFI(savings, liveContribution, liveTarget);
+
+    var months = overspending ? liveMonths : baseMonths;
+    var today = new Date();
+
+    var countdownEl = document.getElementById('countdown');
+    var exitDateEl = document.getElementById('exitDate');
+    var statusDot = document.getElementById('statusDot');
+    var statusText = document.getElementById('statusText');
+    var shiftBanner = document.getElementById('shiftBanner');
+    var wDot = document.getElementById('wDot');
+    var wNum = document.getElementById('wNum');
+    var wSub = document.getElementById('wSub');
+
+    if (months === null){
+      countdownEl.innerHTML = '&mdash; <small>not on track</small>';
+      exitDateEl.textContent = 'Contributions don\'t clear your spend at this rate. Raise income or cut spend.';
+      countdownEl.className = 'countdown red';
+      statusDot.className = 'dot red';
+      statusText.className = 'status-text red';
+      statusText.textContent = 'Off track';
+      wDot.className = 'wdot red';
+      wNum.innerHTML = '&mdash; <span>mo</span>';
+      wNum.className = 'wnum red';
+      wSub.textContent = 'Spend exceeds take-home. No path to FI at current rate.';
+    } else {
+      var exitDate = addMonths(today, months);
+      countdownEl.innerHTML = months + ' <small>months</small>';
+      exitDateEl.innerHTML = 'Financially independent by <b>' + formatDate(exitDate) + '</b>';
+
+      var overBudget = overspending && liveMonths !== null && baseMonths !== null && liveMonths > baseMonths;
+      countdownEl.className = overBudget ? 'countdown red' : 'countdown';
+      statusDot.className = overBudget ? 'dot red' : 'dot';
+      statusText.className = overBudget ? 'status-text red' : 'status-text';
+      statusText.textContent = overBudget ? 'Overspending' : 'On track';
+
+      wDot.className = overBudget ? 'wdot red' : 'wdot';
+      wNum.className = overBudget ? 'wnum red' : 'wnum';
+      wNum.innerHTML = months + ' <span>mo</span>';
+      wSub.innerHTML = overBudget
+        ? 'Spend up 8% YoY &mdash; exit pushed to <b>' + formatDate(exitDate) + '</b>'
+        : 'On budget &mdash; exit date holds at <b>' + formatDate(exitDate) + '</b>';
+
+      if (overBudget){
+        shiftBanner.className = 'shift-banner show';
+        shiftBanner.innerHTML = 'Overspend detected: this month\'s burn is running <b>' +
+          Math.round((OVERSPEND_FACTOR - 1) * 100) + '%</b> above budget. If that holds, your timeline shifts from <b>' +
+          baseMonths + '</b> to <b>' + liveMonths + '</b> months.';
+      } else {
+        shiftBanner.className = 'shift-banner';
+        shiftBanner.innerHTML = '';
+      }
+    }
+
+    document.getElementById('chainSavings').textContent = money(savings);
+    document.getElementById('chainContribution').textContent = money(liveContribution) + '/mo';
+    document.getElementById('chainContribution').className = 'v ' + (liveContribution >= 0 ? 'pos' : 'neg');
+    document.getElementById('chainTarget').textContent = money(liveTarget);
+  }
+
+  locEl.addEventListener('change', function(){
+    loadLocation(this.value);
+    overspendEl.checked = false;
+    calculate();
+  });
+  overspendEl.addEventListener('change', calculate);
+  calcBtn.addEventListener('click', calculate);
+  [salaryEl, savingsEl, spendEl].forEach(function(el){
+    el.addEventListener('change', calculate);
+  });
+
+  loadLocation('austin');
+  calculate();
+})();
+</script>
+</body>
+</html>
